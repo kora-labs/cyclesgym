@@ -1,0 +1,7 @@
+LATITUDE                40.687500
+ALTITUDE                0.000000
+SCREENING_HEIGHT        10.0
+YEAR    DOY     PP      TX      TN      SOLAR   RHX     RHN     WIND
+####    ###     mm      deg C   deg C   MJ/m2   %       %       m/s
+1980    1       0.0000  1.00    2.000   3.0000  4.000   5.000   6.000
+1980    2       0.0000  00.0    00.00   00.000  00.00   00.00   1.500

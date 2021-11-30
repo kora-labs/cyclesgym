@@ -1,0 +1,44 @@
+FIXED_FERTILIZATION
+YEAR                          	1
+DOY                           	106
+SOURCE                        	UreaAmmoniumNitrate
+MASS                          	150
+FORM                          	Liquid
+METHOD                        	Broadcast
+LAYER                         	1
+C_Organic                     	0
+C_Charcoal                    	0
+N_Organic                     	0
+N_Charcoal                    	0
+N_NH4                         	0.75
+N_NO3                         	0.25
+P_Organic                     	0
+P_CHARCOAL                    	0
+P_INORGANIC                   	0
+K                             	0
+S                             	0
+
+PLANTING
+YEAR                          	1
+DOY                           	106
+END_DOY                       	-999
+MAX_SMC                       	-999
+MIN_SMC                       	0.0
+MIN_SOIL_TEMP                 	0.0
+CROP                          	CornRM.90
+USE_AUTO_IRR                  	0
+USE_AUTO_FERT                 	0
+FRACTION                      	1.0
+CLIPPING_START                	1
+CLIPPING_END                  	366
+
+TILLAGE
+YEAR                          	1
+DOY                           	106
+TOOL                          	Planter_double_disk_opnr
+DEPTH                         	0.03
+SOIL_DISTURB_RATIO            	5
+MIXING_EFFICIENCY             	0.071554
+CROP_NAME                     	N/A
+FRAC_THERMAL_TIME             	0.0
+KILL_EFFICIENCY               	0.0
