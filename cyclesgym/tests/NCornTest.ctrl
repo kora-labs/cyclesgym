@@ -1,3 +1,5 @@
+## Control file to be used for direct simulation with cycles with no gym env ##
+
 ## SIMULATION YEARS ##
 
 SIMULATION_START_YEAR   1980
@@ -26,7 +28,7 @@ ANNUAL_NFLUX_OUT        1
 ## OTHER INPUT FILES ##
 
 CROP_FILE               GenericCrops.crop
-OPERATION_FILE          NWinterWheatTest.operation
+OPERATION_FILE          NCornTest.operation
 SOIL_FILE               GenericHagerstown.soil
 WEATHER_FILE            RockSprings.weather
 REINIT_FILE             N/A

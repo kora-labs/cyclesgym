@@ -1,3 +1,5 @@
+## Operation file to be used for simulation with gym env ##
+
 PLANTING
 YEAR                          	1
 DOY                           	106

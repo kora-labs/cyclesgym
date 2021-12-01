@@ -121,7 +121,7 @@ class OperationManager(object):
         for k in keys:
             self._delete_single_operation(k)
 
-    def write_operation(self, fname=None):
+    def save(self, fname=None):
         if fname is None:
             if self.fname is None:
                 raise RuntimeError('A file name must be provided')

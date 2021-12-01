@@ -1,3 +1,5 @@
+## Operation file to be used for direct simulation with cycles with no gym env ##
+
 FIXED_FERTILIZATION
 YEAR                          	1
 DOY                           	106
