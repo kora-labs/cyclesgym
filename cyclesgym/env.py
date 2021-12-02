@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 import gym
+import numpy as np
 import pandas as pd
 from gym import spaces
 import stat
@@ -79,7 +80,6 @@ class CornEnv(gym.Env):
         return self.crop_manager.get_day(year, doy)['AG BIOMASS']
 
     def _implement_action(self, action, year, doy):
-        # TODO: This way if there is a fertilization of other nutrients happening at the same time, we overwrite it
         if action != 0:
             N_mass = action / (self.n_actions - 1) * self.maxN
             year = year - self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1  # Convert to operation format
@@ -102,6 +102,45 @@ class CornEnv(gym.Env):
               'S': 0}}
             self.op_manager.insert_new_operations(op, force=True)
             self.op_manager.save()
+
+    @staticmethod
+    def _udpate_operation(op, N_mass, mode='absolute'):
+        """
+        Update the NH4 and NO3 values of a fertilization operation.
+
+        Parameters
+        ----------
+        op: dict
+            Dictionary of fertilization operation to update
+        N_mass: float
+            Total mass of NH4 and NO3 we want to use
+        mode: str
+            With 'increment' the N_mass is added to the one already present
+            in the operation. With 'absolute' we use N_mass regadless of what
+            was already there
+        Returns
+        -------
+        new_op: dict
+            Dictionary of updated fertilization operation
+        """
+        assert mode in ['increment', 'absolute']
+        new_op = op.copy()
+        nutrients = ['C_Organic', 'C_Charcoal', 'N_Organic', 'N_Charcoal', 'N_NH4', 'N_NO3', 'P_Organic',
+                     'P_CHARCOAL', 'P_INORGANIC', 'K', 'S']
+        new_masses = np.zeros(len(nutrients), dtype=float)
+
+        for i, n in enumerate(nutrients):
+            if n == 'N_NH4':
+                new_masses[i] = op[n] * op['MASS'] + 0.75 * N_mass if mode == 'increment' else 0.75 * N_mass
+            elif n == 'N_NO3':
+                new_masses[i] = op[n] * op['MASS'] + 0.25 * N_mass if mode == 'increment' else 0.25 * N_mass
+            else:
+                new_masses[i] = op[n] * op['MASS']
+        total_mass = np.sum(new_masses)
+        new_op['MASS'] = total_mass
+        new_op.update({nutrient: new_mass / total_mass for (nutrient, new_mass) in zip(nutrients, new_masses)})
+
+        return new_op
 
     def reset(self):
         # Make sure cycles is executable
@@ -159,7 +198,10 @@ class CornEnv(gym.Env):
         return datetime.now().strftime('%Y_%m_%d_%H_%M_%S-') + str(uuid4())
 
     def close(self):
-        self._move_sim_specific_files()
+        try:
+            self._move_sim_specific_files()
+        except FileNotFoundError:
+            pass
 
 
 if __name__ == '__main__':

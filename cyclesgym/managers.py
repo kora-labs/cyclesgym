@@ -47,6 +47,7 @@ class OperationManager(object):
                 line_n = None
                 k = None
                 self.op_dict = dict()
+                # TODO: using (year, doy, operation_type) as key, creates conflicts when there is fertilization applied to different layers on the same day
                 for line in f.readlines():
                     if line.startswith(OPERATION_TYPES):
                         operation = line.strip(' ')
