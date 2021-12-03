@@ -51,6 +51,10 @@ class CornEnv(gym.Env):
         self.delta = delta
         self.doy = 1
 
+        # Rendering
+        self.viewer = None
+        self.last_action = None
+
     def _check_new_action(self, action, year, doy):
         """
         Check whether the proposed action is different from the one in the op file.
@@ -80,6 +84,7 @@ class CornEnv(gym.Env):
                    N_mass * 0.25 != old_op['N_NO3'] * old_op['MASS']
 
     def step(self, action):
+        assert self.action_space.contains(action), f'{a} is not a valid action'
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
@@ -93,6 +98,8 @@ class CornEnv(gym.Env):
         if done:
             self._move_sim_specific_files()
         r = self.compute_reward() if done else 0
+
+        self.last_action = action
         return obs, r, done, {}
 
     def compute_obs(self, year, doy):
@@ -313,7 +320,50 @@ class CornEnv(gym.Env):
                 self.input_dir.joinpath(fname).rename(self.sim_output_dir.joinpath(fname))
 
     def render(self, mode="human"):
-        pass
+        if self.viewer is None:
+            import pyglet
+            from gym.envs.classic_control import rendering
+
+            self.viewer = rendering.Viewer(500, 500)
+            self.viewer.set_bounds(-2.2, 2.2, -2.2, 2.2)
+            fname = Path(__file__).parent.joinpath("assets/green-tea.png")
+            self.img_plant = rendering.Image(fname, 1.0, 1.0)
+            self.imgtrans_plant = rendering.Transform()
+            self.img_plant.add_attr(self.imgtrans_plant)
+
+            fname = Path(__file__).parent.joinpath("assets/chemicals.png")
+            self.img_fert = rendering.Image(fname, 1.0, 1.0)
+            self.imgtrans_fert = rendering.Transform()
+            self.img_fert.add_attr(self.imgtrans_fert)
+
+        #     self.day_label = pyglet.text.Label(
+        #         "0000",
+        #         font_size=36,
+        #         x=20,
+        #         y=20 * 2.5 / 40.00,
+        #         anchor_x="left",
+        #         anchor_y="center",
+        #         color=(255, 255, 255, 255),
+        #     )
+        #
+        # self.day_label.text = f"{self.doy:4}"
+        # self.day_label.draw()
+        # TODO: Add text to credit images
+
+        self.viewer.add_onetime(self.img_plant)
+        biomass = self.crop_manager.crop_state.loc[self.doy, 'CUM. BIOMASS']
+        self.imgtrans_plant.scale = (-biomass / 10, biomass / 10)
+
+        mass = self.last_action * self.maxN / (self.n_actions - 1) if self.last_action is not None else 0
+        if mass > 0:
+            self.viewer.add_onetime(self.img_fert)
+            self.imgtrans_fert.scale = (-mass / self.maxN, mass / self.maxN)
+            self.imgtrans_fert.translation = (- 0.8, 0.8)
+
+        self.day_label.text = f"{self.doy:4}"
+        self.day_label.draw()
+
+        return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
     def _call_cycles_raw(self):
         subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_DIR)
@@ -333,14 +383,23 @@ class CornEnv(gym.Env):
         except FileNotFoundError:
             pass
 
+        if self.viewer:
+            self.viewer.close()
+            self.viewer = None
+
 
 if __name__ == '__main__':
+    import time
     env = CornEnv('ContinuousCorn.ctrl')
     env.reset()
     t = time.time()
     for i in range(365):
-        s, r, done, info = env.step(0)
+        a = np.random.choice(6z)
+        s, r, done, info = env.step(a)
         if done:
             break
+        env.render()
+        time.sleep(0.1)
+    print(env.obs_name)
     env.close()
     print(f'Time elapsed:\t{time.time() - t}')
