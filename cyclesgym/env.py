@@ -197,7 +197,10 @@ class CornEnv(gym.Env):
                 new_masses[i] = op[n] * op['MASS']
         total_mass = np.sum(new_masses)
         new_op['MASS'] = total_mass
-        new_op.update({nutrient: new_mass / total_mass for (nutrient, new_mass) in zip(nutrients, new_masses)})
+        if total_mass > 0:
+            new_op.update({nutrient: new_mass / total_mass for (nutrient, new_mass) in zip(nutrients, new_masses)})
+        else:
+            new_op.update({nutrient: 0 for nutrient in nutrients})
 
         return new_op
 
@@ -241,6 +244,7 @@ class CornEnv(gym.Env):
         src = self.input_dir.joinpath(self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'])
         dest = self.input_dir.joinpath(src.stem + sim_id + '.operation')
         shutil.copy(src, dest)
+        # TODO: Use update
         self.op_manager = OperationManager(dest)
 
         # Set to zero NH4 and NO3 for existing fertilization operation
@@ -298,6 +302,7 @@ class CornEnv(gym.Env):
 
         # Change control and its manager
         self.ctrl = new_fname
+        # TODO: Use update method here
         self.ctrl_manager = ControlManager(dest)
         return dest
 
