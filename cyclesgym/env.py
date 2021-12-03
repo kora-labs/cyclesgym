@@ -394,7 +394,7 @@ if __name__ == '__main__':
     env.reset()
     t = time.time()
     for i in range(365):
-        a = np.random.choice(6z)
+        a = np.random.choice(6)
         s, r, done, info = env.step(a)
         if done:
             break
