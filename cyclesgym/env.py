@@ -1,3 +1,4 @@
+import pathlib
 import shutil
 from pathlib import Path
 import gym
@@ -158,22 +159,83 @@ class CornEnv(gym.Env):
         return self.compute_obs(year=self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'], doy=self.doy)
 
     def _create_sim_operation_file(self, sim_id):
+        """
+        Create copy of base operation file specific to this simulation.
+
+        When starting a new simulation, we create a copy of the operation
+        file specified in the base_ctrl file. The difference between this
+        copy and the original is that all the values of NH4 and NO3 in fixed
+        fertilization operations are set to 0. The operation manager
+        operates on the copy, not the original.
+
+        Parameters
+        ----------
+        sim_id: str
+            Unique simulation identifier
+
+        Returns
+        -------
+        dest: pathlib.Path
+            Path of the new operation file
+
+        """
+        # Copy the operation file and parse it with operation manager
         src = self.input_dir.joinpath(self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'])
         dest = self.input_dir.joinpath(src.stem + sim_id + '.operation')
         shutil.copy(src, dest)
         self.op_manager = OperationManager(dest)
+
+        # Set to zero NH4 and NO3 for existing fertilization operation
+        for (year, doy, op_type), op in self.op_manager.op_dict.items():
+            if op_type == 'FIXED_FERTILIZATION':
+                new_op = self._udpate_operation(op, N_mass=0, mode='absolute')
+                self.op_manager.insert_new_operations({(year, doy, op_type): new_op}, force=True)
+
+        # Write operation file to be used in simulation
+        self.op_manager.save()
         return dest
 
     def _create_sim_ctrl_file(self, op_name, sim_id):
-        # Change to new operation file
+        """
+        Create copy of base control file specific to this simulation.
+
+        When starting a new simulation, we create a copy of the base control
+        file. The difference between this copy and the original is that the
+        copy specifies a different operation file (given by op_name,
+        which shoul be the output of self._create_sim_operation_file) to run
+        the simulation. The control manager operates on the copy, not the
+        original.
+
+        Parameters
+        ----------
+        sim_id: str
+            Unique simulation identifier
+        op_name: str
+            Name of the operation file to be used for the simulation
+
+
+        Returns
+        -------
+        dest: pathlib.Path
+            Path of the new operation file
+
+        """
+        # Store original operation file name in temporary
         tmp = self.ctrl_base_manager.ctrl_dict['OPERATION_FILE']
+
+        # Change to new operation file
+        if isinstance(op_name, pathlib.Path):
+            op_name = op_name.name
         self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'] = op_name
 
         # Write new control file
         new_fname = Path(self.ctrl_base.stem + sim_id + '.ctrl')
         dest = self.input_dir.joinpath(new_fname)
+        # TODO: Add save method to control manager and use it here
         with open(dest, 'w') as f:
             f.write(self.ctrl_base_manager.to_string())
+
+        # Copy back original operation file name
         self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'] = tmp
 
         # Change control and its manager
