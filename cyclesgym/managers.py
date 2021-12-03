@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 import pandas as pd
 
-__all__ = ['OperationManager', 'ControlManager', 'WeatherManager', 'CropManager']
+__all__ = ['OperationManager', 'ControlManager', 'WeatherManager',
+           'CropManager', 'SeasonManager']
 
 OPERATION_TYPES = ('TILLAGE', 'PLANTING', 'FIXED_FERTILIZATION', 'FIXED_IRRIGATION', 'AUTO_IRRIGATION')
 
@@ -50,7 +51,7 @@ class OperationManager(object):
                 # TODO: using (year, doy, operation_type) as key, creates conflicts when there is fertilization applied to different layers on the same day
                 for line in f.readlines():
                     if line.startswith(OPERATION_TYPES):
-                        operation = line.strip(' ')
+                        operation = line.strip(' \n')
                         line_n = 0
                         if k is not None:
                             self.op_dict.update({k: v})
@@ -65,6 +66,10 @@ class OperationManager(object):
                             if len(line.split()) > 0:
                                 argument = line.split()[0]
                                 value = line.split()[1]
+                                try:
+                                    value = float(value)
+                                except ValueError:
+                                    pass
                                 v.update({argument: value})
                         line_n += 1
                 if k is not None:
@@ -154,9 +159,7 @@ class CropManager(Manager):
             df[numeric_cols] = df[numeric_cols].astype(float)
 
             # Convert date to be consistent with weather
-            df.insert(1, 'DOY', pd.to_datetime(df['DATE']).dt.dayofyear)
-            df.insert(1, 'YEAR', pd.to_datetime(df['DATE']).dt.year)
-            df.drop(columns='DATE', inplace=True)
+            convert_date(df, old_col_name='DATE', new_col_name='', position=1)
             self.crop_state = df
 
     def get_day(self, year, doy):
@@ -241,6 +244,33 @@ class ControlManager(Manager):
 
     def __str__(self):
         return self.to_string()
+
+
+class SeasonManager(Manager):
+    def __init__(self, fname=None):
+        self.season_df = pd.DataFrame()
+        super().__init__(fname)
+
+    def _parse(self):
+        if self.fname is not None:
+            with open(self.fname, 'r') as f:
+                for i, l in enumerate(f.readlines()):
+                    if i == 0:
+                        columns = [n.strip(' \n') for n in l.split('\t')]
+                    elif i == 2:
+                        value = [[float(v) if v.replace('.', '', 1).isdigit()
+                                 else v for v in l.split()]]
+            self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
+            convert_date(self.season_df, old_col_name='DATE', new_col_name='',
+                         position=1)
+            convert_date(self.season_df, old_col_name='PLANT_DATE',
+                         new_col_name='_PLANT', position=3)
+
+def convert_date(df, old_col_name, new_col_name, position=1):
+    df.insert(position, f'DOY{new_col_name}', pd.to_datetime(df[old_col_name]).dt.dayofyear)
+    df.insert(position, f'YEAR{new_col_name}', pd.to_datetime(df[old_col_name]).dt.year)
+    df.drop(columns=old_col_name, inplace=True)
+    return df
 
 
 def num_lines(file):

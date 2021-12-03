@@ -53,10 +53,6 @@ class TestWeatherManager(unittest.TestCase):
 
     def test_parse(self):
         assert self.manager.immutables.equals(self.target_immutables)
-        print(self.manager.mutables==self.target_mutables)
-        print(self.manager.mutables)
-        print(self.target_mutables)
-
         assert self.manager.mutables.equals(self.target_mutables)
 
 
@@ -91,6 +87,24 @@ class TestControlManager(unittest.TestCase):
 
     def test_parse(self):
         assert self.manager.ctrl_dict == self.target
+
+
+class TestSeasonManager(unittest.TestCase):
+    def setUp(self):
+        fname = Path.cwd().joinpath('DummySeason.dat')
+        self.manager = SeasonManager(fname)
+        columns = ['YEAR', 'DOY', 'CROP', 'YEAR_PLANT', 'DOY_PLANT', 'TOTAL BIOMASS',
+                   'ROOT BIOMASS', 'GRAIN YIELD', 'FORAGE YIELD', 'AG RESIDUE',
+                   'HARVEST INDEX', 'POTENTIAL TR', 'ACTUAL TR', 'SOIL EVAP',
+                   'IRRIGATION', 'TOTAL N', 'ROOT N', 'GRAIN N', 'FORAGE N',
+                   'CUM. N STRESS', 'N IN HARVEST', 'N IN RESIDUE',
+                   'N CONCN FORAGE', 'N FIXATION', 'N ADDED']
+        values = [[1980, 252, 'CornRM.90', 1980, 110] +
+                  list(np.arange(1, 21).astype(float))]
+        self.target = pd.DataFrame(data=values, index=None, columns=columns)
+
+    def test_parse(self):
+        assert self.target.equals(self.manager.season_df)
 
 
 class TestOperationManager(unittest.TestCase):
