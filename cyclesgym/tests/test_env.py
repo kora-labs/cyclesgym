@@ -180,7 +180,37 @@ class TestCornEnv(unittest.TestCase):
         assert r == 1
 
     def test_implement_action(self):
-        pass
+        # Case with collision
+        env = CornEnv(self.fnames[0].replace('.ctrl', ''), delta=7, maxN=150,
+                      n_actions=16)
+        operations = env.op_manager.op_dict.copy()
+        target_op = {'SOURCE': 'UreaAmmoniumNitrate', 'MASS': 20.0, 'FORM': 'Liquid', 'METHOD': 'Broadcast', 'LAYER': 1.,
+                   'C_Organic': 0., 'C_Charcoal': 0., 'N_Organic': 0., 'N_Charcoal': 0., 'N_NH4': 0.75, 'N_NO3': 0.25,
+                   'P_Organic': 0., 'P_CHARCOAL': 0., 'P_INORGANIC': 0., 'K': 0., 'S': 0.}
+        operations.update({(1, 106, 'FIXED_FERTILIZATION'): target_op})
+        env._implement_action(2, 1980, 106)
+
+        # Check manager is equal
+        assert env.op_manager.op_dict == operations
+
+        # Check file is equal
+        new_manager = OperationManager(env.op_manager.fname)
+        assert new_manager.op_dict == env.op_manager.op_dict
+
+        # Case without collision
+        env = CornEnv(self.fnames[0].replace('.ctrl', ''), delta=7, maxN=150,
+                      n_actions=16)
+        operations = env.op_manager.op_dict.copy()
+        operations.update({(1, 105, 'FIXED_FERTILIZATION'): target_op})
+        env._implement_action(2, 1980, 105)
+
+        # Check manager is equal
+        assert env.op_manager.op_dict == operations
+
+        # Check file is equal
+        new_manager = OperationManager(env.op_manager.fname)
+        assert new_manager.op_dict == env.op_manager.op_dict
+
 
     def test_move_sim_specific_files(self):
         pass

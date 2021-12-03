@@ -83,8 +83,9 @@ class CornEnv(gym.Env):
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
-        self._implement_action(action, year=year, doy=self.doy)
-        self._call_cycles()
+        if self._check_new_action(action, year, self.doy):
+            self._implement_action(action, year=year, doy=self.doy)
+            self._call_cycles()
         obs = self.compute_obs(year=year, doy=self.doy)
 
         self.doy += self.delta
@@ -108,26 +109,56 @@ class CornEnv(gym.Env):
         return self.season_manager.season_df.at[0, 'TOTAL BIOMASS']
 
     def _implement_action(self, action, year, doy):
+        """
+        Write the action to the operation file.
+
+        First, we check for collision. If one occurs, we recompute the operation
+        to account for existing nutrient (overwriting NH4 and NO3). If one does
+        not occur we just write our action.
+
+        Parameters
+        ----------
+        action: int
+            Suggested action
+        year: int
+            Year of the simulation
+        doy: int
+            Day of the year
+        """
         if action != 0:
+            # Get desired N mass
             N_mass = action / (self.n_actions - 1) * self.maxN
-            year = year - self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1  # Convert to operation format
-            op = {(year, doy, 'FIXED_FERTILIZATION'): {
-              'SOURCE': 'UreaAmmoniumNitrate',
-              'MASS': N_mass,
-              'FORM': 'Liquid',
-              'METHOD': 'Broadcast',
-              'LAYER': 1,
-              'C_Organic': 0,
-              'C_Charcoal': 0,
-              'N_Organic': 0,
-              'N_Charcoal': 0,
-              'N_NH4': 0.75,
-              'N_NO3': 0.25,
-              'P_Organic': 0,
-              'P_CHARCOAL': 0,
-              'P_INORGANIC': 0,
-              'K': 0,
-              'S': 0}}
+
+            # Convert year to operation format
+            year = year - self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1
+
+            # Check for collision
+            key = (year, doy, 'FIXED_FERTILIZATION')
+            fertilization_op = self.op_manager.op_dict.get(key)
+            collision = fertilization_op is not None
+
+            if collision:
+                op = {(year, doy, 'FIXED_FERTILIZATION'):
+                          self._udpate_operation(fertilization_op, N_mass,
+                                                 mode='absolute')}
+            else:
+                op = {(year, doy, 'FIXED_FERTILIZATION'): {
+                  'SOURCE': 'UreaAmmoniumNitrate',
+                  'MASS': N_mass,
+                  'FORM': 'Liquid',
+                  'METHOD': 'Broadcast',
+                  'LAYER': 1,
+                  'C_Organic': 0,
+                  'C_Charcoal': 0,
+                  'N_Organic': 0,
+                  'N_Charcoal': 0,
+                  'N_NH4': 0.75,
+                  'N_NO3': 0.25,
+                  'P_Organic': 0,
+                  'P_CHARCOAL': 0,
+                  'P_INORGANIC': 0,
+                  'K': 0,
+                  'S': 0}}
             self.op_manager.insert_new_operations(op, force=True)
             self.op_manager.save()
 
