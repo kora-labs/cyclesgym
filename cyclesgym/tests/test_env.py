@@ -142,7 +142,21 @@ class TestCornEnv(unittest.TestCase):
         pass
 
     def test_check_new_action(self):
-        pass
+        env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
+                      n_actions=16)
+        env.op_manager = OperationManager(Path.cwd().joinpath('NCornTest.operation'))
+
+        # No action on a day where nothing used to happen => Not new
+        assert not env._check_new_action(0, 1980, 105)
+
+        # Same fertilization action as the one already in the file => Not new
+        assert not env._check_new_action(15, 1980, 106)
+
+        # No action on a day when we used to fertilize => New
+        assert env._check_new_action(0, 1980, 106)
+
+        # Fertilize on a day when we used to do nothing => New
+        assert env._check_new_action(15, 1980, 105)
 
     def test_step(self):
         pass

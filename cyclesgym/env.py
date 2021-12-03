@@ -51,6 +51,34 @@ class CornEnv(gym.Env):
         self.delta = delta
         self.doy = 1
 
+    def _check_new_action(self, action, year, doy):
+        """
+        Check whether the proposed action is different from the one in the op file.
+
+        Parameters
+        ----------
+        action: int
+            Suggested action
+        year: int
+            Year of the simulation
+        doy: int
+            Day of the year
+        """
+        # Convert year
+        year = year - self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1
+
+        # Get old operation
+        old_op = self.op_manager.op_dict.get((year, doy, 'FIXED_FERTILIZATION'))
+
+        # If there was no fertilization, we need to compare to the "do nothing" action
+        if old_op is None:
+            return action != 0
+        else:
+            # Compare if amount of nutrient is the same
+            N_mass = action / (self.n_actions - 1) * self.maxN
+            return N_mass * 0.75 != old_op['N_NH4'] * old_op['MASS'] or \
+                   N_mass * 0.25 != old_op['N_NO3'] * old_op['MASS']
+
     def step(self, action):
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
