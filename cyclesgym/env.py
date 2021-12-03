@@ -359,9 +359,9 @@ class CornEnv(gym.Env):
             self.viewer.add_onetime(self.img_fert)
             self.imgtrans_fert.scale = (-mass / self.maxN, mass / self.maxN)
             self.imgtrans_fert.translation = (- 0.8, 0.8)
-
-        self.day_label.text = f"{self.doy:4}"
-        self.day_label.draw()
+        #
+        # self.day_label.text = f"{self.doy:4}"
+        # self.day_label.draw()
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
