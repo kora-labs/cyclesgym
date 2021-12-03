@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 import subprocess
 import shutil
+import numpy as np
 from cyclesgym.env import CornEnv
 from cyclesgym.managers import *
 
@@ -147,10 +148,22 @@ class TestCornEnv(unittest.TestCase):
         pass
 
     def test_compute_obs(self):
-        pass
+        env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
+                      n_actions=16)
+        env.weather_manager = WeatherManager(Path.cwd().joinpath(
+            'DummyWeather.weather'))
+        env.crop_manager = CropManager(Path.cwd().joinpath('DummyCrop.dat'))
+        obs = env.compute_obs(1980, 1)
+        target_obs = np.concatenate((np.arange(14), np.array([40.6875, 0, 10]),
+                                     np.arange(7)))
+        assert np.all(obs == target_obs)
 
     def test_compute_reward(self):
-        pass
+        env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
+                      n_actions=16)
+        env.season_manager = SeasonManager(Path.cwd().joinpath('DummySeason.dat'))
+        r = env.compute_reward()
+        assert r == 1
 
     def test_implement_action(self):
         pass

@@ -34,6 +34,7 @@ class CornEnv(gym.Env):
         self.weather_manager = WeatherManager(self.input_dir.joinpath(self.ctrl_manager.ctrl_dict['WEATHER_FILE']))
         self.op_manager = OperationManager(self.input_dir.joinpath(self.ctrl_manager.ctrl_dict['OPERATION_FILE']))
         self.crop_manager = CropManager(None)
+        self.season_manager = SeasonManager(None)
         self.sim_id_list = []
 
         # State and action space
@@ -53,21 +54,19 @@ class CornEnv(gym.Env):
     def step(self, action):
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
-        # TODO: We should make sure there is no fertilizing happening between t and t+delta t. Cannot start with empty operation due to planting and tillage. Cannot remove all fertilization operations otherwise we may loose other nutrients
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
         self._implement_action(action, year=year, doy=self.doy)
         self._call_cycles()
         obs = self.compute_obs(year=year, doy=self.doy)
+
         self.doy += self.delta
         done = self.doy > 365
         if done:
             self._move_sim_specific_files()
-        r = self.compute_reward(year, self.doy) if done else 0
+        r = self.compute_reward() if done else 0
         return obs, r, done, {}
 
     def compute_obs(self, year, doy):
-        # TODO: This way we parse every time, we could avoid if the action has not changed
-        self.crop_manager.update(self.sim_output_dir.joinpath('CornRM.90.dat'))
         crop_data = self.crop_manager.get_day(year, doy).iloc[0, 4:]
         imm_weather_data = self.weather_manager.immutables.iloc[0, :]
         mutable_weather_data = self.weather_manager.get_day(year, doy).iloc[0, 2:]
@@ -77,8 +76,8 @@ class CornEnv(gym.Env):
             self.obs_name = list(obs.index)
         return obs.to_numpy()
 
-    def compute_reward(self, year, doy):
-        return self.crop_manager.get_day(year, doy)['AG BIOMASS']
+    def compute_reward(self):
+        return self.season_manager.season_df.at[0, 'TOTAL BIOMASS']
 
     def _implement_action(self, action, year, doy):
         if action != 0:
@@ -252,8 +251,13 @@ class CornEnv(gym.Env):
     def render(self, mode="human"):
         pass
 
-    def _call_cycles(self):
+    def _call_cycles_raw(self):
         subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_DIR)
+
+    def _call_cycles(self):
+        self._call_cycles_raw()
+        self.crop_manager.update(self.sim_output_dir.joinpath('CornRM.90.dat'))
+        self.season_manager.update(self.sim_output_dir.joinpath('season.dat'))
 
     @staticmethod
     def _create_sim_id():
