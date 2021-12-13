@@ -4,7 +4,7 @@ import pathlib
 import zipfile
 
 
-def main():
+def install_cycles():
     # Skip if already exists
     install_dir = pathlib.Path.cwd().joinpath('cycles')
     if install_dir.is_dir():
@@ -36,4 +36,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    install_cycles()

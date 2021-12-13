@@ -1,4 +1,7 @@
 import setuptools
+from setuptools.command.install import install
+from pathlib import Path
+from install_cycles import install_cycles
 
 # with open("README.md", "r", encoding='utf_8') as fh:
 #     long_description = fh.read()
@@ -11,6 +14,19 @@ install_requires=[
     'ipykernel',
     'pyglet'
 ]
+
+
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        install.run(self)
+        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+        cycles_path = Path.cwd().joinpath('cycles')
+        if not cycles_path.is_dir():
+            print(f'Cycles not found at {cycles_path}')
+            print(f'Installing cycles at {cycles_path}')
+            install_cycles()
+
 
 setuptools.setup(
     name='cyclesgym',
@@ -25,5 +41,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     python_requires=">=3.10",
     include_package_data=True,
-    install_requires=install_requires
+    install_requires=install_requires,
+    cmdclass={'install': PostInstallCommand},
 )
