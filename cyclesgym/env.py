@@ -39,9 +39,12 @@ class CornEnv(gym.Env):
 
         # State and action space
         self.crop_obs_size = 14
-        self.weather_obs_size = 12
+        self.weather_obs_size = 10
         obs_size = self.crop_obs_size + self.weather_obs_size
-        # self.observation_space = spaces.Box(low=-1.0, high=2.0, shape=(3, 4), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-10.0,
+                                            high=10.0,
+                                            shape=(obs_size,),
+                                            dtype=np.float32)
         self.obs_name = None
         self.action_space = spaces.Discrete(n_actions, )
         self.maxN = maxN
@@ -84,7 +87,7 @@ class CornEnv(gym.Env):
                    N_mass * 0.25 != old_op['N_NO3'] * old_op['MASS']
 
     def step(self, action):
-        assert self.action_space.contains(action), f'{a} is not a valid action'
+        assert self.action_space.contains(action), f'{action} is not a valid action'
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
@@ -97,7 +100,8 @@ class CornEnv(gym.Env):
         done = self.doy > 365
         if done:
             self._move_sim_specific_files()
-        r = self.compute_reward() if done else 0
+
+        r = self.compute_reward(obs, action, done)
 
         self.last_action = action
         return obs, r, done, {}
@@ -110,10 +114,18 @@ class CornEnv(gym.Env):
         obs = pd.concat([crop_data, imm_weather_data, mutable_weather_data])
         if self.obs_name is None:
             self.obs_name = list(obs.index)
-        return obs.to_numpy()
+        return obs.to_numpy(dtype=float)
 
-    def compute_reward(self):
-        return self.season_manager.season_df.at[0, 'TOTAL BIOMASS']
+    def compute_reward(self, obs, action, done):
+
+        # Penalize fertilization
+        r = -0.05 * action
+
+        # Reward total yield
+        if done:
+            r += self.season_manager.season_df.at[0, 'GRAIN YIELD']
+
+        return r
 
     def _implement_action(self, action, year, doy):
         """
