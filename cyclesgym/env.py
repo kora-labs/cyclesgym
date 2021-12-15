@@ -86,14 +86,14 @@ class CornEnv(gym.Env):
             return N_mass * 0.75 != old_op['N_NH4'] * old_op['MASS'] or \
                    N_mass * 0.25 != old_op['N_NO3'] * old_op['MASS']
 
-    def step(self, action):
+    def step(self, action, debug=False):
         assert self.action_space.contains(action), f'{action} is not a valid action'
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
         if self._check_new_action(action, year, self.doy):
             self._implement_action(action, year=year, doy=self.doy)
-            self._call_cycles()
+            self._call_cycles(debug=debug)
         obs = self.compute_obs(year=year, doy=self.doy)
 
         self.doy += self.delta
@@ -223,7 +223,7 @@ class CornEnv(gym.Env):
 
         return new_op
 
-    def reset(self):
+    def reset(self, debug=False):
         # Make sure cycles is executable
         CYCLES_DIR.joinpath('Cycles').chmod(stat.S_IEXEC)
 
@@ -234,7 +234,7 @@ class CornEnv(gym.Env):
         self._create_sim_ctrl_file(op_path.name, current_sim_id)
         self.sim_output_dir = self.output_dir.joinpath(self.ctrl.stem)
 
-        self._call_cycles()
+        self._call_cycles(debug=debug)
         self.doy = 1
         return self.compute_obs(year=self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'], doy=self.doy)
 
@@ -377,11 +377,13 @@ class CornEnv(gym.Env):
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
-    def _call_cycles_raw(self):
-        subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_DIR)
+    def _call_cycles_raw(self, debug=False):
+        stdout = subprocess.STDOUT if debug else subprocess.DEVNULL
+        subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_DIR,
+                        stdout=stdout)
 
-    def _call_cycles(self):
-        self._call_cycles_raw()
+    def _call_cycles(self, debug=False):
+        self._call_cycles_raw(debug=debug)
         self.crop_manager.update(self.sim_output_dir.joinpath('CornRM.90.dat'))
         self.season_manager.update(self.sim_output_dir.joinpath('season.dat'))
 
