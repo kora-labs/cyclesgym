@@ -10,7 +10,9 @@ install_requires=[
     'pandas',
     'matplotlib',
     'ipykernel',
-    'pyglet'
+    'pyglet',
+    'torch >= 1.8.1',
+    'stable-baselines3'
 ]
 
 class new_install(install):
@@ -39,7 +41,7 @@ setuptools.setup(
     author_email='matteo.turchetta@inf.ethz.ch',
     keywords='Crop growth sumulator',
     packages=setuptools.find_packages(),
-    python_requires=">=3.10",
+    python_requires=">=3.8",
     include_package_data=True,
     install_requires=install_requires,
     cmdclass={'install': new_install},
