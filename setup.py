@@ -12,7 +12,8 @@ install_requires=[
     'ipykernel',
     'pyglet',
     'torch >= 1.8.1',
-    'stable-baselines3'
+    'stable-baselines3',
+    'scipy'
 ]
 
 class new_install(install):
