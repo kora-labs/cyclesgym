@@ -11,9 +11,10 @@ install_requires=[
     'matplotlib',
     'ipykernel',
     'pyglet',
-    'torch >= 1.8.1',
+    'torch >= 1.8.1+cpu',
     'stable-baselines3',
-    'scipy'
+    'scipy',
+    'wandb'
 ]
 
 class new_install(install):
