@@ -402,6 +402,30 @@ class CornEnv(gym.Env):
             self.viewer = None
 
 
+class PartialObsCornEnv(CornEnv):
+    def __init__(self, ctrl_base, delta=7, maxN=120, n_actions=7, mask=None):
+        super().__init__(ctrl_base, delta, maxN, n_actions)
+
+        if mask is None:
+            mask = np.ones(self.observation_space.shape, dtype=bool)
+        else:
+            mask = np.asarray(mask, dtype=bool)
+
+        if mask.shape != self.observation_space.shape:
+            raise ValueError(f'The shape of the observation of the base '
+                             f'environment is {self.observation_space.shape},'
+                             f'which is different from the mask shape '
+                             f'{mask.shape}')
+        self.mask = mask
+        self.observation_space = spaces.Box(low=self.observation_space.low[mask],
+                                            high=self.observation_space.high[mask],
+                                            shape=(np.count_nonzero(mask),),
+                                            dtype=self.observation_space.dtype)
+
+    def compute_obs(self, year, doy):
+        obs = super().compute_obs(year, doy)
+        return obs[self.mask]
+
 if __name__ == '__main__':
     import time
     env = CornEnv('ContinuousCorn.ctrl')

@@ -32,7 +32,7 @@ class Manager(ABC):
     def update(self, fname):
         self.fname = fname
         if not self._valid_input_file():
-            raise ValueError(f'{self.fname}File not existing. To initialize manager without a file, pass None as input')
+            raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
         self._parse()
 
 
@@ -265,6 +265,7 @@ class SeasonManager(Manager):
                          position=1)
             convert_date(self.season_df, old_col_name='PLANT_DATE',
                          new_col_name='_PLANT', position=3)
+
 
 def convert_date(df, old_col_name, new_col_name, position=1):
     df.insert(position, f'DOY{new_col_name}', pd.to_datetime(df[old_col_name]).dt.dayofyear)
