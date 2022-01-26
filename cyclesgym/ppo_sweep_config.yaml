@@ -1,0 +1,33 @@
+method: grid
+metric:
+  name: return
+  goal: maximize
+parameters:
+    learning_rate:
+        values: [2e-5]
+    n_steps:
+      values: [53]
+    batch_size:
+      values: [64]
+    n_epochs:
+      values: [5]
+    gae_lambda:
+      values: [0.95]
+    ent_coef:
+      values: [1e-3, 1e-4, 1e-5]
+    pi_layers:
+      values: [0]
+    pi_neurons:
+      values: [0]
+    vf_layers:
+      values: [1]
+    vf_neurons:
+      values: [16]
+    common_neurons:
+      values: [16]
+    common_layers:
+      values: [1]
+    seed:
+      values: [0, 1, 2, 3, 4, 5, 6, 7]
+    n_years:
+      values: [1000]
