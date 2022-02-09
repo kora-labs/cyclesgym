@@ -40,7 +40,8 @@ class CornEnv(gym.Env):
         # State and action space
         self.crop_obs_size = 14
         self.weather_obs_size = 10
-        obs_size = self.crop_obs_size + self.weather_obs_size
+        self.N_to_date = 0
+        obs_size = self.crop_obs_size + self.weather_obs_size + 2
         self.observation_space = spaces.Box(low=-10.0,
                                             high=10.0,
                                             shape=(obs_size,),
@@ -94,6 +95,7 @@ class CornEnv(gym.Env):
         if self._check_new_action(action, year, self.doy):
             self._implement_action(action, year=year, doy=self.doy)
             self._call_cycles(debug=debug)
+        self.N_to_date += self.maxN * action / (self.n_actions - 1)
         obs = self.compute_obs(year=year, doy=self.doy)
 
         self.doy += self.delta
@@ -113,8 +115,9 @@ class CornEnv(gym.Env):
 
         obs = pd.concat([crop_data, imm_weather_data, mutable_weather_data])
         if self.obs_name is None:
-            self.obs_name = list(obs.index)
-        return obs.to_numpy(dtype=float)
+            self.obs_name = list(obs.index) + ['DOY', 'N TO DATE']
+
+        return np.append(obs.to_numpy(dtype=float), [self.doy, self.N_to_date])
 
     def compute_reward(self, obs, action, done):
 
@@ -236,6 +239,7 @@ class CornEnv(gym.Env):
 
         self._call_cycles(debug=debug)
         self.doy = 1
+        self.N_to_date = 0
         return self.compute_obs(year=self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'], doy=self.doy)
 
     def _create_sim_operation_file(self, sim_id):
