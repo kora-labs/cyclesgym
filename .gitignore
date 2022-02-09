@@ -2,3 +2,7 @@ cycles
 .idea
 .ipynb_checkpoints
 __pycache__/
+agents
+*egg-info
+.DS_Store
+expert_trajectories/

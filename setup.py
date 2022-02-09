@@ -14,7 +14,10 @@ install_requires=[
     'torch >= 1.8.1+cpu',
     'stable-baselines3',
     'scipy',
-    'wandb'
+    'wandb',
+    'tensorboard',
+    'imitation @ git+https://git@github.com/HumanCompatibleAI/imitation@cf7e4074f1d4786f22c74a69dddb251f71d288df#egg=imitation', # Install cf7e4074f1d4786f22c74a69dddb251f71d288df commit of imitation library
+    'pygmo'
 ]
 
 class new_install(install):
