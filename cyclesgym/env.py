@@ -122,11 +122,28 @@ class CornEnv(gym.Env):
     def compute_reward(self, obs, action, done):
 
         # Penalize fertilization
-        r = -0.05 * action
+        N_kg_per_hectare = self.maxN * action / (self.n_actions - 1)
+
+        # Avg anhydrous ammonia cost in 2020 from https://farmdocdaily.illinois.edu/2021/08/2021-fertilizer-price-increases-in-perspective-with-implications-for-2022-costs.html
+        N_dollars_per_kg = 496 * 0.001 # $/ton * ton/kg
+        N_dollars_per_hectare = N_kg_per_hectare * N_dollars_per_kg
+        r = -N_dollars_per_hectare
+
+        # Old reward
+        # weight = self.maxN * action / (self.n_actions - 1)
+        # r = -25*1e-4 * weight
 
         # Reward total yield
         if done:
-            r += self.season_manager.season_df.at[0, 'GRAIN YIELD']
+            # Conversion rate for corn from bushel to metric ton from https://grains.org/markets-tools-data/tools/converting-grain-units/
+            bushel_per_tonne = 39.3680
+            # Avg US price of corn for 2020 from https://quickstats.nass.usda.gov/results/BA8CCB81-A2BB-3C5C-BD23-DBAC365C7832
+            dollars_per_bushel = 4.53
+            dollars_per_tonne = dollars_per_bushel * bushel_per_tonne
+
+            harvest = self.season_manager.season_df.at[0, 'GRAIN YIELD'] # Metric tonne per hectar
+            grain_dollars_per_hectare = harvest * dollars_per_tonne
+            r += grain_dollars_per_hectare
 
         return r
 
