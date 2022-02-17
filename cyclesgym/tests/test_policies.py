@@ -34,18 +34,18 @@ class DummyEnv(gym.Env):
 class TestInformedPolicy(unittest.TestCase):
     def setUp(self) -> None:
         self.env = DummyEnv()
-        params = (100, # start_day
-                  200, # end_day
-                  20, # a
+        params = (14, # 14 * 7 + 1 = 99 start_day
+                  14, #  99 + 14* 7 = 197 end_day
+                  # 20, # a
                   1.0, # max_val
                   0.0, # min_val
-                  100, # saturation
-                  100 # lengthscale
+                  5, # 20 * 5for saturation
+                  2 # 10**2 lengthscale
                   )
         self.model = InformedPolicy(env=self.env, params=params)
         self.obs = np.array([[50, 0],    # Before window starts
                             [250, 40],  # After window is over
-                            [110, 50],  # Middle of down ramp
+                            [102, 50],  # Middle of down ramp
                             [150, 50]   # Middle of window
                             ])
 
@@ -53,9 +53,10 @@ class TestInformedPolicy(unittest.TestCase):
         probs = self.model.action_probability(self.obs)
 
         Z = 2*np.exp(-50**2 / 100) + 1
+        p = 1-1/7*(102-99)
         target_probs = np.array([[1, 0, 0],
                                  [1, 0, 0],
-                                 [0.5 + (0.5 * np.exp(-50**2 / 100))/Z, 0.5/Z, (0.5 * np.exp(-50**2 / 100))/Z],
+                                 [p + ((1-p) * np.exp(-50**2 / 100))/Z, (1-p)/Z, ((1-p) * np.exp(-50**2 / 100))/Z],
                                  [np.exp(-50**2 / 100)/Z, 1/Z, np.exp(-50**2 / 100)/Z]])
         assert_allclose(probs, target_probs)
 

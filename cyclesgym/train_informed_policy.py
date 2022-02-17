@@ -1,11 +1,12 @@
-from cyclesgym.informed_policy import InformedPolicy
-import numpy as np
-import matplotlib.pyplot as plt
-from cyclesgym.env import PartialObsCornEnv
-from stable_baselines3.common.evaluation import evaluate_policy
 from pathlib import Path
-from cyclesgym.dummy_policies import OpenLoopPolicy
+import matplotlib.pyplot as plt
+import numpy as np
 import pygmo as pg
+from stable_baselines3.common.evaluation import evaluate_policy
+
+from cyclesgym.dummy_policies import OpenLoopPolicy
+from cyclesgym.env import PartialObsCornEnv
+from cyclesgym.informed_policy import InformedPolicy
 
 
 class informed_policy_problem(object):
@@ -76,9 +77,9 @@ if __name__ == '__main__':
     # Train GA
     p = informed_policy_problem()
     prob = pg.problem(p)
-    algo = pg.algorithm(pg.sga(gen=1))
-    pop = pg.population(prob, 20)
-    pop, f_val = evolve_pop_with_log(pop, algo, gen=100, maximize=True)
+    algo = pg.algorithm(pg.sea(gen=1))
+    pop = pg.population(prob, 5)
+    pop, f_val = evolve_pop_with_log(pop, algo, gen=15, maximize=True)
 
     # Cycles expert policy
     env = p._env_creator()
@@ -117,8 +118,8 @@ if __name__ == '__main__':
     # Save plot
     path = Path.cwd().parents[0].joinpath('figures')
     path.mkdir(exist_ok=True, parents=True)
-    print(path)
     plt.savefig(path.joinpath('GA_experts_comparison.pdf'), format='pdf', transparent=True)
+    plt.ylim([1650, 2350])
 
     plt.show()
 

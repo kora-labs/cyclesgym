@@ -53,28 +53,28 @@ class InformedPolicy(object):
         a, max_val, min_val, saturation, lengthscale
         """
         # Better parametrization
-        # self.start_day = 1 + params[0] * 7
-        # delta = params[1] * 7
-        # self.end_day = np.clip(self.start_day + delta, a_min=0, a_max=366)
-        # self.a = 1/7
-        # self.max_val = params[2]
-        # self.min_val = params[3]
-        #
-        # # p2 parameters
-        # self.saturation = 20 * params[4]
-        # self.lengthscale = 10**params[5]
+        self.start_day = 1 + params[0] * 7
+        delta = params[1] * 7
+        self.end_day = np.clip(self.start_day + delta, a_min=0, a_max=366)
+        self.a = 1/7
+        self.max_val = params[2]
+        self.min_val = params[3]
+
+        # p2 parameters
+        self.saturation = 20 * params[4]
+        self.lengthscale = 10**params[5]
 
         # Naive parametrization
         # p1 parameters
-        self.start_day = params[0]
-        self.end_day = params[1]
-        self.a = 1/params[2]
-        self.max_val = params[3]
-        self.min_val = params[4]
-
-        # p2 parameters
-        self.saturation = params[5]
-        self.lengthscale = params[6]
+        # self.start_day = params[0]
+        # self.end_day = params[1]
+        # self.a = 1/params[2]
+        # self.max_val = params[3]
+        # self.min_val = params[4]
+        #
+        # # p2 parameters
+        # self.saturation = params[5]
+        # self.lengthscale = params[6]
 
     def pi1(self, doy):
         """
