@@ -4,30 +4,32 @@ metric:
   goal: maximize
 parameters:
     learning_rate:
-        values: [2e-5]
+        values: [3e-4]
     n_steps:
-      values: [53]
+      values: [2048]
     batch_size:
       values: [64]
     n_epochs:
-      values: [5]
+      values: [10]
     gae_lambda:
       values: [0.95]
     ent_coef:
-      values: [1e-3, 1e-4, 1e-5]
+      values: [1e-5]
     pi_layers:
       values: [0]
     pi_neurons:
       values: [0]
     vf_layers:
-      values: [1]
+      values: [0]
     vf_neurons:
-      values: [16]
+      values: [0]
     common_neurons:
-      values: [16]
+      values: [32]
     common_layers:
-      values: [1]
+      values: [2]
     seed:
-      values: [0, 1, 2, 3, 4, 5, 6, 7]
+      values: [0, 1, 2, 3]
     n_years:
-      values: [1000]
+      values: [2000]
+    bc:
+      values: [0]
