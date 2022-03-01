@@ -199,7 +199,7 @@ class CornEnv(gym.Env):
                   'K': 0,
                   'S': 0}}
             self.op_manager.insert_new_operations(op, force=True)
-            self.op_manager.save()
+            self.op_manager.save(self.op_manager.fname)
 
     @staticmethod
     def _udpate_operation(op, N_mass, mode='absolute'):
@@ -294,7 +294,7 @@ class CornEnv(gym.Env):
                 self.op_manager.insert_new_operations({(year, doy, op_type): new_op}, force=True)
 
         # Write operation file to be used in simulation
-        self.op_manager.save()
+        self.op_manager.save(self.op_manager.fname)
         return dest
 
     def _create_sim_ctrl_file(self, op_name, sim_id):
@@ -335,7 +335,7 @@ class CornEnv(gym.Env):
         dest = self.input_dir.joinpath(new_fname)
         # TODO: Add save method to control manager and use it here
         with open(dest, 'w') as f:
-            f.write(self.ctrl_base_manager.to_string())
+            f.write(self.ctrl_base_manager._to_str())
 
         # Copy back original operation file name
         self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'] = tmp
@@ -405,8 +405,8 @@ class CornEnv(gym.Env):
 
     def _call_cycles(self, debug=False):
         self._call_cycles_raw(debug=debug)
-        self.crop_manager.update(self.sim_output_dir.joinpath('CornRM.90.dat'))
-        self.season_manager.update(self.sim_output_dir.joinpath('season.dat'))
+        self.crop_manager.update_file(self.sim_output_dir.joinpath('CornRM.90.dat'))
+        self.season_manager.update_file(self.sim_output_dir.joinpath('season.dat'))
 
     @staticmethod
     def _create_sim_id():

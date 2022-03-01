@@ -3,7 +3,7 @@ import numpy as np
 import warnings
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-
+from datetime import datetime as dt
 import pandas as pd
 
 __all__ = ['OperationManager', 'ControlManager', 'WeatherManager',
@@ -42,10 +42,10 @@ class Manager(ABC):
     def save(self, fname, force=True):
         if not force and fname.is_file():
             raise RuntimeError(f'The file {fname} already exists. Use force=True if you want to overwrite it')
-        if not self._valid_output_file():
+        if not self._valid_output_file(fname):
             raise ValueError(f'{fname} is not a valid path to save the file')
         else:
-            s = self._to_string()
+            s = self._to_str()
             with open(fname, 'w') as fp:
                 fp.write(s)
 
@@ -190,11 +190,11 @@ class CropManager(Manager):
             df[numeric_cols] = df[numeric_cols].astype(float)
 
             # Convert date to be consistent with weather
-            convert_date(df, old_col_name='DATE', new_col_name='', position=1)
+            date_to_ydoy(df, old_col_name='DATE', new_col_name='', position=1)
             self.crop_state = df
 
     def _to_str(self):
-        
+        return ydoy_to_date(self.crop_state, new_col_name='', old_col_name='').to_csv(index=False, sep='\t')
 
     def get_day(self, year, doy):
         return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]
@@ -244,6 +244,18 @@ class WeatherManager(Manager):
         self.mutables = self.mutables.astype({'YEAR': int,
                                               'DOY': int})
 
+    def _to_str_immutables(self):
+        s = ''
+        for (name, data) in self.immutables.iteritems():
+            s += f'{name:<20}{data.values[0]}\n'
+        return s
+
+    def _to_str_mutables(self):
+        return self.mutables.to_csv(index=False, sep=' ')
+
+    def _to_str(self):
+        return f'{self._to_str_immutables()}{self._to_str_mutables()}'
+
     def get_day(self, year, doy):
         return self.mutables.loc[(self.mutables['YEAR'] == year) & (self.mutables['DOY'] == doy)]
 
@@ -266,18 +278,15 @@ class ControlManager(Manager):
                         v = v if k in self._non_numeric else int(v)
                         self.ctrl_dict.update({k: v})
 
-    def to_string(self):
-        s = '## SIMULATION YEARS ##\n\n'
+    def _to_str(self):
+        s = ''
         for k, v in self.ctrl_dict.items():
-            s += f"{k:30}\t{v}\n"
+            s += f"{k:30}{v}\n"
             if k.startswith('ROTATION_SIZE'):
-                s += '\n## SIMULATION OPTIONS ##\n\n'
+                s += '\n\n\n'
             elif k.startswith('ANNUAL_NFLUX_OUT'):
-                s += '\n## OTHER INPUT FILES ##\n\n'
+                s += '\n\n\n'
         return s
-
-    def __str__(self):
-        return self.to_string()
 
 
 class SeasonManager(Manager):
@@ -295,17 +304,30 @@ class SeasonManager(Manager):
                         value = [[float(v) if v.replace('.', '', 1).isdigit()
                                  else v for v in l.split()]]
             self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
-            convert_date(self.season_df, old_col_name='DATE', new_col_name='',
+            date_to_ydoy(self.season_df, old_col_name='DATE', new_col_name='',
                          position=1)
-            convert_date(self.season_df, old_col_name='PLANT_DATE',
+            date_to_ydoy(self.season_df, old_col_name='PLANT_DATE',
                          new_col_name='_PLANT', position=3)
 
+    def _to_str(self):
+        pass
 
-def convert_date(df, old_col_name, new_col_name, position=1):
+# TODO: Position=1 by default relies on the drop afterwards, update it. Don't do things in place
+def date_to_ydoy(df, old_col_name, new_col_name, position=1):
     df.insert(position, f'DOY{new_col_name}', pd.to_datetime(df[old_col_name]).dt.dayofyear)
     df.insert(position, f'YEAR{new_col_name}', pd.to_datetime(df[old_col_name]).dt.year)
     df.drop(columns=old_col_name, inplace=True)
     return df
+
+
+def ydoy_to_date(df, old_col_name, new_col_name, position=1):
+    dates = [dt.strftime(dt.strptime(f'{year}-{doy}', '%Y-%j'), format='%Y-%m-%d') for year, doy in zip(df[f'YEAR{old_col_name}'], df[f'DOY{old_col_name}'])]
+    new_df = df.copy()
+    new_df.insert(position, f'DATE{new_col_name}', dates)
+    new_df.drop(columns=[f'DOY{old_col_name}', f'YEAR{old_col_name}'], inplace=True)
+    # df.insert(position, f'DATE{new_col_name}',
+    #           pd.to_datetime(df[old_col_name]).dt.dayofyear)
+    return new_df
 
 
 def num_lines(file):

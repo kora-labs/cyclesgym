@@ -1,0 +1,21 @@
+## Operation file to test base operation manager ##
+FIXED_FERTILIZATION
+YEAR                          	1
+DOY                           	106
+MASS                          	150.0
+LAYER                         	1.0
+N_NH4                         	0.75
+N_NO3                         	0.25
+
+
+PLANTING
+YEAR                          	1
+DOY                           	106
+CROP                          	CornRM.90
+FRACTION                      	1.0
+
+TILLAGE
+YEAR                          	1
+DOY                           	106
+DEPTH                         	0.03
+SOIL_DISTURB_RATIO            	5.0
