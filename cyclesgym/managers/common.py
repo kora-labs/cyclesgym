@@ -9,38 +9,70 @@ import pandas as pd
 __all__ = ['OperationManager', 'ControlManager', 'WeatherManager',
            'CropManager', 'SeasonManager']
 
-OPERATION_TYPES = ('TILLAGE', 'PLANTING', 'FIXED_FERTILIZATION', 'FIXED_IRRIGATION', 'AUTO_IRRIGATION')
-
 
 class Manager(ABC):
     def __init__(self, fname=None):
         self.fname = fname
-        if not self._valid_input_file():
+        if not self._valid_input_file(self.fname):
             raise ValueError('File not existing. To initialize manager without a file, pass None as input')
         self._parse()
 
-    def _valid_input_file(self):
-        if self.fname is not None:
-            return self.fname.is_file()
+    @staticmethod
+    def _valid_input_file(fname):
+        if fname is not None:
+            return fname.is_file()
         else:
             return True
 
+    @staticmethod
+    def _valid_output_file(fname):
+        return fname is not None
+
     @abstractmethod
     def _parse(self):
-        pass
+        raise NotImplementedError
 
-    def update(self, fname):
+    @abstractmethod
+    def _to_str(self):
+        raise NotImplementedError
+
+    def __str__(self):
+        return self._to_str()
+
+    def save(self, fname, force=True):
+        if not force and fname.is_file():
+            raise RuntimeError(f'The file {fname} already exists. Use force=True if you want to overwrite it')
+        if not self._valid_output_file():
+            raise ValueError(f'{fname} is not a valid path to save the file')
+        else:
+            s = self._to_string()
+            with open(fname, 'w') as fp:
+                fp.write(s)
+
+    def update_file(self, fname):
         self.fname = fname
-        if not self._valid_input_file():
+        if not self._valid_input_file(self.fname):
             raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
         self._parse()
 
 
-class OperationManager(object):
+class OperationManager(Manager):
+    OPERATION_TYPES = (
+    'TILLAGE', 'PLANTING', 'FIXED_FERTILIZATION', 'FIXED_IRRIGATION',
+    'AUTO_IRRIGATION')
+
     def __init__(self, fname=None):
-        self.fname = fname
         self.op_dict = dict()
-        self._parse()
+        super().__init__(fname)
+
+    def _valid_input_file(self, fname):
+        if fname is None:
+            return True
+        else:
+            return super(OperationManager, self)._valid_input_file(fname) and fname.suffix == '.operation'
+
+    def _valid_output_file(self, fname):
+        return super(OperationManager, self)._valid_output_file(fname) and fname.suffix == '.operation'
 
     def _parse(self):
         if self.fname is not None:
@@ -50,7 +82,7 @@ class OperationManager(object):
                 self.op_dict = dict()
                 # TODO: using (year, doy, operation_type) as key, creates conflicts when there is fertilization applied to different layers on the same day
                 for line in f.readlines():
-                    if line.startswith(OPERATION_TYPES):
+                    if line.startswith(self.OPERATION_TYPES):
                         operation = line.strip(' \n')
                         line_n = 0
                         if k is not None:
@@ -77,16 +109,7 @@ class OperationManager(object):
         else:
             self.op_dict = {}
 
-    def count_same_day_events(self, year, doy):
-        return len(self.get_same_day_events(year, doy))
-
-    def get_same_day_events(self, year, doy):
-        return {k: v for k, v in self.op_dict.items() if k[0] == year and k[1] == doy}
-
-    def sort_operation(self):
-        self.op_dict = dict(sorted(self.op_dict.items()))
-
-    def to_string(self):
+    def _to_str(self):
         s = ''
         for k, v in self.op_dict.items():
             year, doy, operation = k
@@ -99,12 +122,23 @@ class OperationManager(object):
             s += '\n'
         return s
 
-    def __str__(self):
-        return self.to_string()
+    def save(self, fname, force=True):
+        self.sort_operation()
+        super().save(fname, force)
+
+    def count_same_day_events(self, year, doy):
+        return len(self.get_same_day_events(year, doy))
+
+    def get_same_day_events(self, year, doy):
+        return {k: v for k, v in self.op_dict.items() if k[0] == year and k[1] == doy}
+
+    def sort_operation(self):
+        self.op_dict = dict(sorted(self.op_dict.items()))
 
     def _insert_single_operation(self, op_key, op_val, force=True):
         year, doy, operation = op_key
-        assert operation in OPERATION_TYPES, f'Operation must be one of the following {OPERATION_TYPES}'
+        assert operation in self.OPERATION_TYPES, \
+            f'Operation must be one of the following {self.OPERATION_TYPES}'
         collisions = [operation == k[2] for k in self.get_same_day_events(year, doy).keys()]
         if any(collisions):
             warnings.warn(f'There is already an operation {operation} for they day {doy} of year {year}.')
@@ -127,23 +161,20 @@ class OperationManager(object):
         for k in keys:
             self._delete_single_operation(k)
 
-    def save(self, fname=None):
-        if fname is None:
-            if self.fname is None:
-                raise RuntimeError('A file name must be provided')
-            else:
-                # Overwrite the initial file
-                fname = self.fname
-        self.sort_operation()
-        s = self.to_string()
-        with open(fname, 'w') as fp:
-            fp.write(s)
-
 
 class CropManager(Manager):
     def __init__(self, fname=None):
         self.crop_state = pd.DataFrame()
         super().__init__(fname)
+
+    def _valid_input_file(self, fname):
+        if fname is None:
+            return True
+        else:
+            return super(CropManager, self)._valid_input_file(fname) and fname.suffix == '.dat'
+
+    def _valid_output_file(self, fname):
+        return super(CropManager, self)._valid_output_file(fname) and fname.suffix == '.dat'
 
     def _parse(self):
         if self.fname is not None:
@@ -161,6 +192,9 @@ class CropManager(Manager):
             # Convert date to be consistent with weather
             convert_date(df, old_col_name='DATE', new_col_name='', position=1)
             self.crop_state = df
+
+    def _to_str(self):
+        
 
     def get_day(self, year, doy):
         return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]

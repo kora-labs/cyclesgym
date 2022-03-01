@@ -169,15 +169,20 @@ class TestCornEnv(unittest.TestCase):
         env.crop_manager = CropManager(Path.cwd().joinpath('DummyCrop.dat'))
         obs = env.compute_obs(1980, 1)
         target_obs = np.concatenate((np.arange(14), np.array([40.6875, 0, 10]),
-                                     np.arange(7)))
+                                     np.arange(7), np.array([1, 0])))
         assert np.all(obs == target_obs)
 
     def test_compute_reward(self):
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
         env.season_manager = SeasonManager(Path.cwd().joinpath('DummySeason.dat'))
-        r = env.compute_reward()
-        assert r == 1
+
+        bushel_per_tonne = 39.3680
+        dollars_per_bushel = 4.53
+        dollars_per_tonne = dollars_per_bushel * bushel_per_tonne
+        r = env.compute_reward(obs=None, action=0, done=True)  # No penalization for fertilization and positive reward for harvest (basivally testing we read the right value from output files)
+        print(r, dollars_per_tonne)
+        assert r == 3 * dollars_per_tonne
 
     def test_implement_action(self):
         # Case with collision
