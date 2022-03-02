@@ -4,6 +4,7 @@ import numpy as np
 from numpy.testing import *
 import pandas as pd
 from cyclesgym.managers import *
+from cyclesgym.managers.utils import *
 
 
 class TestOperationManager(unittest.TestCase):
@@ -136,7 +137,7 @@ class TestSeasonManager(unittest.TestCase):
     def setUp(self):
         self.fname = Path.cwd().joinpath('DummySeason.dat')
         self.manager = SeasonManager(self.fname)
-        columns = ['YEAR', 'DOY', 'CROP', 'YEAR_PLANT', 'DOY_PLANT', 'TOTAL BIOMASS',
+        columns = ['YEAR', 'DOY', 'CROP', 'PLANT_YEAR', 'PLANT_DOY', 'TOTAL BIOMASS',
                    'ROOT BIOMASS', 'GRAIN YIELD', 'FORAGE YIELD', 'AG RESIDUE',
                    'HARVEST INDEX', 'POTENTIAL TR', 'ACTUAL TR', 'SOIL EVAP',
                    'IRRIGATION', 'TOTAL N', 'ROOT N', 'GRAIN N', 'FORAGE N',
@@ -149,8 +150,38 @@ class TestSeasonManager(unittest.TestCase):
     def test_parse(self):
         assert self.target.equals(self.manager.season_df)
 
-    def test_to_str(self):
-        pass
+
+class TestUtils(unittest.TestCase):
+    def setUp(self):
+        self.date_df = pd.DataFrame({
+            'DATE': ['1980-01-01', '1980-01-02'],
+            'CROP': ['wheat', 'corn'],
+            'PLANT_DATE': ['1981-01-01', '1981-01-02']
+        })
+        self.ydoy_df = pd.DataFrame({
+            'YEAR': [1980, 1980],
+            'DOY': [1, 2],
+            'CROP': ['wheat', 'corn'],
+            'PLANT_YEAR': [1981, 1981],
+            'PLANT_DOY': [1, 2]
+        })
+
+    def test_datetoydoy(self):
+        new_df = date_to_ydoy(self.date_df, 'DATE',
+                              new_col_names=['YEAR', 'DOY'], inplace=False)
+        new_df = date_to_ydoy(new_df, 'PLANT_DATE',
+                              new_col_names=['PLANT_YEAR', 'PLANT_DOY'],
+                              position=3, inplace=False)
+        assert new_df.equals(self.ydoy_df)
+
+    def test_ydoytodate(self):
+        new_df = ydoy_to_date(self.ydoy_df, old_col_names=['YEAR', 'DOY'],
+                             new_col_name='DATE', inplace=False)
+        new_df = ydoy_to_date(new_df, old_col_names=['PLANT_YEAR', 'PLANT_DOY'],
+                             new_col_name='PLANT_DATE', position=3, inplace=False)
+        assert new_df.equals(self.date_df)
+
+
 
 def compare_stripped_string(s1, s2):
     """

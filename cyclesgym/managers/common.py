@@ -274,12 +274,13 @@ class CropManager(Manager):
             df[numeric_cols] = df[numeric_cols].astype(float)
 
             # Convert date to be consistent with weather
-            date_to_ydoy(df, old_col_name='DATE', new_col_name='', position=1)
+            date_to_ydoy(df, old_col_name='DATE',
+                         new_col_names=['YEAR', 'DOY'], position=1)
             self.crop_state = df
 
     def _to_str(self):
-        return ydoy_to_date(self.crop_state, new_col_name='',
-                            old_col_name='').to_csv(index=False, sep='\t')
+        return ydoy_to_date(self.crop_state, old_col_names=['YEAR', 'DOY'],
+                            new_col_name='DATE').to_csv(index=False, sep='\t')
     def __str__(self):
         return self._to_str()
 
@@ -311,10 +312,11 @@ class SeasonManager(Manager):
                         value = [[float(v) if v.replace('.', '', 1).isdigit()
                                  else v for v in l.split()]]
             self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
-            date_to_ydoy(self.season_df, old_col_name='DATE', new_col_name='',
+            date_to_ydoy(self.season_df, old_col_name='DATE',
+                         new_col_names=['YEAR', 'DOY'],
                          position=1)
             date_to_ydoy(self.season_df, old_col_name='PLANT_DATE',
-                         new_col_name='_PLANT', position=3)
+                         new_col_names=['PLANT_YEAR', 'PLANT_DOY'], position=3)
 
 
 if __name__ == '__main__':
