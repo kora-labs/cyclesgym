@@ -3,8 +3,9 @@ import numpy as np
 import warnings
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
-from datetime import datetime as dt
 import pandas as pd
+
+from cyclesgym.managers.utils import *
 
 __all__ = ['OperationManager', 'ControlManager', 'WeatherManager',
            'CropManager', 'SeasonManager']
@@ -24,13 +25,22 @@ class Manager(ABC):
         else:
             return True
 
-    @staticmethod
-    def _valid_output_file(fname):
-        return fname is not None
-
     @abstractmethod
     def _parse(self):
         raise NotImplementedError
+
+    def update_file(self, fname):
+        self.fname = fname
+        if not self._valid_input_file(self.fname):
+            raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
+        self._parse()
+
+
+class InputFileManager(Manager):
+
+    @staticmethod
+    def _valid_output_file(fname):
+        return fname is not None
 
     @abstractmethod
     def _to_str(self):
@@ -49,14 +59,8 @@ class Manager(ABC):
             with open(fname, 'w') as fp:
                 fp.write(s)
 
-    def update_file(self, fname):
-        self.fname = fname
-        if not self._valid_input_file(self.fname):
-            raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
-        self._parse()
 
-
-class OperationManager(Manager):
+class OperationManager(InputFileManager):
     OPERATION_TYPES = (
     'TILLAGE', 'PLANTING', 'FIXED_FERTILIZATION', 'FIXED_IRRIGATION',
     'AUTO_IRRIGATION')
@@ -162,54 +166,7 @@ class OperationManager(Manager):
             self._delete_single_operation(k)
 
 
-class CropManager(Manager):
-    def __init__(self, fname=None):
-        self.crop_state = pd.DataFrame()
-        super().__init__(fname)
-
-    def _valid_input_file(self, fname):
-        if fname is None:
-            return True
-        else:
-            return super(CropManager, self)._valid_input_file(fname) and fname.suffix == '.dat'
-
-    def _valid_output_file(self, fname):
-        return super(CropManager, self)._valid_output_file(fname) and fname.suffix == '.dat'
-
-    def _parse(self):
-        if self.fname is not None:
-            # Read and remove unit of measurement row
-            df = pd.read_csv(self.fname, sep='\t').drop(index=0)
-            df.reset_index(drop=True, inplace=True)
-
-            # Remove empty spaces and cast as floats
-            df.columns = df.columns.str.strip(' ')
-            df['CROP'] = df['CROP'].str.strip(' ')
-            df['STAGE'] = df['STAGE'].str.strip(' ')
-            numeric_cols = df.columns[3:]
-            df[numeric_cols] = df[numeric_cols].astype(float)
-
-            # Convert date to be consistent with weather
-            date_to_ydoy(df, old_col_name='DATE', new_col_name='', position=1)
-            self.crop_state = df
-
-    def _to_str(self):
-        return ydoy_to_date(self.crop_state, new_col_name='', old_col_name='').to_csv(index=False, sep='\t')
-
-    def get_day(self, year, doy):
-        return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]
-
-    def plot(self, columns):
-        columns = np.atleast_2d(columns)
-        shape = columns.shape
-        fig, axes = plt.subplots(*shape)
-        for i in range(shape[0]):
-            for j in range(shape[1]):
-                axes[i, j].plot(self.crop_state[columns[i, j]])
-        plt.show()
-
-
-class WeatherManager(Manager):
+class WeatherManager(InputFileManager):
     def __init__(self, fname=None):
         self.immutables = pd.DataFrame()
         self.mutables = pd.DataFrame
@@ -260,7 +217,7 @@ class WeatherManager(Manager):
         return self.mutables.loc[(self.mutables['YEAR'] == year) & (self.mutables['DOY'] == doy)]
 
 
-class ControlManager(Manager):
+class ControlManager(InputFileManager):
     def __init__(self, fname=None):
         self.fname = fname
         self.ctrl_dict = dict()
@@ -289,6 +246,56 @@ class ControlManager(Manager):
         return s
 
 
+class CropManager(Manager):
+    def __init__(self, fname=None):
+        self.crop_state = pd.DataFrame()
+        super().__init__(fname)
+
+    def _valid_input_file(self, fname):
+        if fname is None:
+            return True
+        else:
+            return super(CropManager, self)._valid_input_file(fname) and fname.suffix == '.dat'
+
+    def _valid_output_file(self, fname):
+        return super(CropManager, self)._valid_output_file(fname) and fname.suffix == '.dat'
+
+    def _parse(self):
+        if self.fname is not None:
+            # Read and remove unit of measurement row
+            df = pd.read_csv(self.fname, sep='\t').drop(index=0)
+            df.reset_index(drop=True, inplace=True)
+
+            # Remove empty spaces and cast as floats
+            df.columns = df.columns.str.strip(' ')
+            df['CROP'] = df['CROP'].str.strip(' ')
+            df['STAGE'] = df['STAGE'].str.strip(' ')
+            numeric_cols = df.columns[3:]
+            df[numeric_cols] = df[numeric_cols].astype(float)
+
+            # Convert date to be consistent with weather
+            date_to_ydoy(df, old_col_name='DATE', new_col_name='', position=1)
+            self.crop_state = df
+
+    def _to_str(self):
+        return ydoy_to_date(self.crop_state, new_col_name='',
+                            old_col_name='').to_csv(index=False, sep='\t')
+    def __str__(self):
+        return self._to_str()
+
+    def get_day(self, year, doy):
+        return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]
+
+    def plot(self, columns):
+        columns = np.atleast_2d(columns)
+        shape = columns.shape
+        fig, axes = plt.subplots(*shape)
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                axes[i, j].plot(self.crop_state[columns[i, j]])
+        plt.show()
+
+
 class SeasonManager(Manager):
     def __init__(self, fname=None):
         self.season_df = pd.DataFrame()
@@ -308,33 +315,6 @@ class SeasonManager(Manager):
                          position=1)
             date_to_ydoy(self.season_df, old_col_name='PLANT_DATE',
                          new_col_name='_PLANT', position=3)
-
-    def _to_str(self):
-        pass
-
-# TODO: Position=1 by default relies on the drop afterwards, update it. Don't do things in place
-def date_to_ydoy(df, old_col_name, new_col_name, position=1):
-    df.insert(position, f'DOY{new_col_name}', pd.to_datetime(df[old_col_name]).dt.dayofyear)
-    df.insert(position, f'YEAR{new_col_name}', pd.to_datetime(df[old_col_name]).dt.year)
-    df.drop(columns=old_col_name, inplace=True)
-    return df
-
-
-def ydoy_to_date(df, old_col_name, new_col_name, position=1):
-    dates = [dt.strftime(dt.strptime(f'{year}-{doy}', '%Y-%j'), format='%Y-%m-%d') for year, doy in zip(df[f'YEAR{old_col_name}'], df[f'DOY{old_col_name}'])]
-    new_df = df.copy()
-    new_df.insert(position, f'DATE{new_col_name}', dates)
-    new_df.drop(columns=[f'DOY{old_col_name}', f'YEAR{old_col_name}'], inplace=True)
-    # df.insert(position, f'DATE{new_col_name}',
-    #           pd.to_datetime(df[old_col_name]).dt.dayofyear)
-    return new_df
-
-
-def num_lines(file):
-    with open(file, 'r') as f:
-        for i, l in enumerate(f, 1):
-            pass
-        return i
 
 
 if __name__ == '__main__':
