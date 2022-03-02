@@ -275,7 +275,7 @@ class CropManager(Manager):
 
             # Convert date to be consistent with weather
             date_to_ydoy(df, old_col_name='DATE',
-                         new_col_names=['YEAR', 'DOY'], position=1, inplace=True)
+                         new_col_names=['YEAR', 'DOY'], inplace=True)
             self.crop_state = df
 
     def _to_str(self):
@@ -313,10 +313,9 @@ class SeasonManager(Manager):
                                  else v for v in l.split()]]
             self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
             date_to_ydoy(self.season_df, old_col_name='DATE',
-                         new_col_names=['YEAR', 'DOY'],
-                         position=1, inplace=True)
+                         new_col_names=['YEAR', 'DOY'], inplace=True)
             date_to_ydoy(self.season_df, old_col_name='PLANT_DATE',
-                         new_col_names=['PLANT_YEAR', 'PLANT_DOY'], position=3,
+                         new_col_names=['PLANT_YEAR', 'PLANT_DOY'],
                          inplace=True)
 
 
