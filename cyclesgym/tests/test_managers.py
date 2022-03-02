@@ -172,6 +172,16 @@ class TestUtils(unittest.TestCase):
         new_df = date_to_ydoy(new_df, 'PLANT_DATE',
                               new_col_names=['PLANT_YEAR', 'PLANT_DOY'],
                               position=3, inplace=False)
+        assert not new_df.equals(self.date_df)
+        assert new_df.equals(self.ydoy_df)
+
+    def test_datetoydoy_inplace(self):
+        new_df = date_to_ydoy(self.date_df, 'DATE',
+                              new_col_names=['YEAR', 'DOY'], inplace=True)
+        new_df = date_to_ydoy(new_df, 'PLANT_DATE',
+                              new_col_names=['PLANT_YEAR', 'PLANT_DOY'],
+                              position=3, inplace=True)
+        assert new_df.equals(self.date_df)
         assert new_df.equals(self.ydoy_df)
 
     def test_ydoytodate(self):
@@ -179,8 +189,18 @@ class TestUtils(unittest.TestCase):
                              new_col_name='DATE', inplace=False)
         new_df = ydoy_to_date(new_df, old_col_names=['PLANT_YEAR', 'PLANT_DOY'],
                              new_col_name='PLANT_DATE', position=3, inplace=False)
+        assert not new_df.equals(self.ydoy_df)
         assert new_df.equals(self.date_df)
 
+    def test_ydoytodate_inplace(self):
+        new_df = ydoy_to_date(self.ydoy_df, old_col_names=['YEAR', 'DOY'],
+                              new_col_name='DATE', inplace=True)
+        new_df = ydoy_to_date(new_df,
+                              old_col_names=['PLANT_YEAR', 'PLANT_DOY'],
+                              new_col_name='PLANT_DATE', position=3,
+                              inplace=True)
+        assert new_df.equals(self.ydoy_df)
+        assert new_df.equals(self.date_df)
 
 
 def compare_stripped_string(s1, s2):
