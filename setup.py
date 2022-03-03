@@ -6,9 +6,14 @@ from setuptools.command.install import install
 
 install_requires=[
     'requests',
-    'gym',
+    'numpy',
     'pandas',
     'matplotlib',
+]
+
+
+env_requires = [
+    'gym',
     'ipykernel',
     'pyglet',
     'torch >= 1.8.1+cpu',
@@ -19,6 +24,7 @@ install_requires=[
     'imitation @ git+https://git@github.com/HumanCompatibleAI/imitation@cf7e4074f1d4786f22c74a69dddb251f71d288df#egg=imitation', # Install cf7e4074f1d4786f22c74a69dddb251f71d288df commit of imitation library
     'pygmo'
 ]
+
 
 class new_install(install):
     """Post-installation for installation mode."""
@@ -49,5 +55,8 @@ setuptools.setup(
     python_requires=">=3.8",
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+            "ENV": env_requires,
+        },
     cmdclass={'install': new_install},
 )

@@ -1,7 +1,6 @@
 from pathlib import Path
 import unittest
 import numpy as np
-from numpy.testing import *
 import pandas as pd
 from cyclesgym.managers import *
 from cyclesgym.managers.utils import *
