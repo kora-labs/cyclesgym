@@ -8,6 +8,8 @@ from cyclesgym.dummy_policies import OpenLoopPolicy
 from cyclesgym.env import PartialObsCornEnv
 from cyclesgym.informed_policy import InformedPolicy
 
+from cyclesgym.paths import FIGURES_PATH
+
 
 class informed_policy_problem(object):
 
@@ -116,9 +118,7 @@ if __name__ == '__main__':
     plt.legend(frameon=False)
 
     # Save plot
-    path = Path.cwd().parents[0].joinpath('figures')
-    path.mkdir(exist_ok=True, parents=True)
-    plt.savefig(path.joinpath('GA_experts_comparison.pdf'), format='pdf', transparent=True)
+    plt.savefig(FIGURES_PATH.joinpath('GA_experts_comparison.pdf'), format='pdf', transparent=True)
     plt.ylim([1650, 2350])
 
     plt.show()

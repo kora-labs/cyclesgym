@@ -14,6 +14,8 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 import matplotlib.pyplot as plt
 
+from cyclesgym.paths import AGENTS_PATH
+
 
 def my_load_results(path: Path, window_size: int=5) -> pd.DataFrame:
     """
@@ -51,7 +53,7 @@ def my_load_results(path: Path, window_size: int=5) -> pd.DataFrame:
 
 
 # Create environment
-models_dir = Path.cwd().parent.joinpath('agents', 'corn', 'dqn')
+models_dir = AGENTS_PATH.joinpath('corn', 'dqn')
 
 df = my_load_results(models_dir)
 plt.plot(df['r_mean'])

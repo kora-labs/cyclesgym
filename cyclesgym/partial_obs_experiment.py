@@ -6,10 +6,11 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
+from cyclesgym.paths import AGENTS_PATH
 
 def train(mask):
     # Create environment
-    models_dir = Path.cwd().parent.joinpath('agents', 'corn', 'ppo')
+    models_dir = AGENTS_PATH.joinpath('corn', 'ppo')
     models_dir.mkdir(exist_ok=True, parents=True)
     env = PartialObsCornEnv('ContinuousCorn.ctrl', mask=mask)
 

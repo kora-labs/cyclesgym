@@ -18,7 +18,7 @@ from yaml import Loader
 import multiprocessing
 
 from cyclesgym.pretrain_utils import train_bc, collect_corn_expert_trajectories
-from cyclesgym.cycles_config import CYCLES_DIR
+from cyclesgym.paths import PROJECT_PATH
 
 
 def create_net_arch(config):
@@ -71,7 +71,7 @@ def train():
                 policy_kwargs={'net_arch': net_arch})
 
     if config['bc']:
-        path = CYCLES_DIR.parents[0].joinpath('expert_trajectories',
+        path = PROJECT_PATH.joinpath('expert_trajectories',
                                               'corn_expert_trajectories.pkl')
         if not path.is_file():
             collect_corn_expert_trajectories(path)

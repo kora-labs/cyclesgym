@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import shutil
 
+from cyclesgym.paths import CYCLES_PATH
 
 def call_cycles(control_file, doy=None):
-    cycles_dir = pathlib.Path.cwd().parent.joinpath('cycles')
-    cycles_dir.joinpath('Cycles').chmod(stat.S_IEXEC)
+    CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
 
     # Run cycles
     if doy is None:
@@ -20,7 +20,7 @@ def call_cycles(control_file, doy=None):
 
 
 def load_output(control_file, fname='CornRM.90.dat'):
-    output_dir = pathlib.Path.cwd().parent.joinpath('cycles', 'output', control_file)
+    output_dir = CYCLES_PATH.joinpath('output', control_file)
     df = pd.read_csv(output_dir.joinpath(fname), sep='\t').drop(0, 0)
     df.columns = df.columns.str.strip(' ')
     numeric_cols = df.columns[3:]
@@ -42,14 +42,14 @@ def plot_trajectory(control_file):
 
 def copy_reinit(control_file, doy):
     """Move reinit to input folder and rename it"""
-    output_dir = pathlib.Path.cwd().parent.joinpath('cycles', 'output', control_file)
-    input_dir = pathlib.Path.cwd().parent.joinpath('cycles', 'input')
+    output_dir = CYCLES_PATH.joinpath('output', control_file)
+    input_dir = CYCLES_PATH.joinpath('input')
     shutil.copy(output_dir.joinpath('reinit.dat'), output_dir.joinpath('reinitcopy.dat'))
     return output_dir.joinpath('reinitcopy.dat').rename(input_dir.joinpath(f'{control_file}{doy}.reinit'))
 
 
 def create_reinit_control_file(ctrl_file, doy, reinit_file):
-    input_dir = pathlib.Path.cwd().parent.joinpath('cycles', 'input')
+    input_dir = CYCLES_PATH.joinpath('input')
     old_ctrl = input_dir.joinpath(f'{ctrl_file}.ctrl')
     new_ctrl_name = f'{ctrl_file}Reinit{doy}'
     new_ctrl = input_dir.joinpath(f'{new_ctrl_name}.ctrl')

@@ -13,13 +13,13 @@ from uuid import uuid4
 from cyclesgym.managers import *
 
 
-from cyclesgym.cycles_config import CYCLES_DIR
+from cyclesgym.paths import CYCLES_PATH
 
 
 class CornEnv(gym.Env):
     def __init__(self, ctrl_base, delta=7, maxN=120, n_actions=7):
-        self.input_dir = CYCLES_DIR.joinpath('input')
-        self.output_dir = CYCLES_DIR.joinpath('output')
+        self.input_dir = CYCLES_PATH.joinpath('input')
+        self.output_dir = CYCLES_PATH.joinpath('output')
         self.sim_output_dir = None
 
         self.ctrl_base = Path(ctrl_base).with_suffix('.ctrl')
@@ -245,7 +245,7 @@ class CornEnv(gym.Env):
 
     def reset(self, debug=False):
         # Make sure cycles is executable
-        CYCLES_DIR.joinpath('Cycles').chmod(stat.S_IEXEC)
+        CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
 
         # Create operation and control specific to this simulation
         current_sim_id = self._create_sim_id()
@@ -400,8 +400,8 @@ class CornEnv(gym.Env):
 
     def _call_cycles_raw(self, debug=False):
         stdout = subprocess.STDOUT if debug else subprocess.DEVNULL
-        subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_DIR,
-                        stdout=stdout)
+        subprocess.run(['./Cycles', '-b', self.ctrl.stem], cwd=CYCLES_PATH,
+                       stdout=stdout)
 
     def _call_cycles(self, debug=False):
         self._call_cycles_raw(debug=debug)

@@ -7,7 +7,7 @@ import numpy as np
 from cyclesgym.env import CornEnv
 from cyclesgym.managers import *
 
-from cyclesgym.cycles_config import CYCLES_DIR
+from cyclesgym.paths import CYCLES_PATH
 
 
 class TestCornEnv(unittest.TestCase):
@@ -18,24 +18,24 @@ class TestCornEnv(unittest.TestCase):
                        'NCornTestNoFertilization.operation']
         for n in self.fnames:
             src = pathlib.Path.cwd().joinpath(n)
-            dest = CYCLES_DIR.joinpath('input', n)
+            dest = CYCLES_PATH.joinpath('input', n)
             shutil.copy(src, dest)
         self.custom_sim_id = lambda :'1' # This way the output does not depend on time and can be deleted by teardown
 
     def tearDown(self):
         for n in self.fnames:
-            pathlib.Path(CYCLES_DIR.joinpath('input', n)).unlink()
+            pathlib.Path(CYCLES_PATH.joinpath('input', n)).unlink()
         try:
-            shutil.rmtree(pathlib.Path(CYCLES_DIR.joinpath('output', self.fnames[0].replace('.ctrl', ''))))
-            shutil.rmtree(pathlib.Path(CYCLES_DIR.joinpath('output', self.fnames[2].replace('.ctrl', self.custom_sim_id()))))
+            shutil.rmtree(pathlib.Path(CYCLES_PATH.joinpath('output', self.fnames[0].replace('.ctrl', ''))))
+            shutil.rmtree(pathlib.Path(CYCLES_PATH.joinpath('output', self.fnames[2].replace('.ctrl', self.custom_sim_id()))))
         except FileNotFoundError:
             pass
 
     def test_equal(self):
         # Start normal simulation and parse results
         self._call_cycles(self.fnames[0].replace('.ctrl', ''))
-        crop_from_sim = CropManager(CYCLES_DIR.joinpath('output',
-                                                        self.fnames[0].replace('.ctrl', ''),
+        crop_from_sim = CropManager(CYCLES_PATH.joinpath('output',
+                                                         self.fnames[0].replace('.ctrl', ''),
                                                         'CornRM.90.dat'))
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
@@ -49,16 +49,16 @@ class TestCornEnv(unittest.TestCase):
             week += 1
             if done:
                 break
-        crop_from_env = CropManager(CYCLES_DIR.joinpath('output',
-                                                        self.fnames[2].replace('.ctrl', self.custom_sim_id()),
+        crop_from_env = CropManager(CYCLES_PATH.joinpath('output',
+                                                         self.fnames[2].replace('.ctrl', self.custom_sim_id()),
                                                         'CornRM.90.dat'))
         assert crop_from_env.crop_state.equals(crop_from_sim.crop_state)
 
     def test_different(self):
         # Start normal simulation and parse results
         self._call_cycles(self.fnames[0].replace('.ctrl', ''))
-        crop_from_sim = CropManager(CYCLES_DIR.joinpath('output',
-                                                        self.fnames[0].replace('.ctrl', ''),
+        crop_from_sim = CropManager(CYCLES_PATH.joinpath('output',
+                                                         self.fnames[0].replace('.ctrl', ''),
                                                         'CornRM.90.dat'))
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
@@ -70,8 +70,8 @@ class TestCornEnv(unittest.TestCase):
             _, _, done, _ = env.step(a)
             if done:
                 break
-        crop_from_env = CropManager(CYCLES_DIR.joinpath('output',
-                                                        self.fnames[2].replace('.ctrl', self.custom_sim_id()),
+        crop_from_env = CropManager(CYCLES_PATH.joinpath('output',
+                                                         self.fnames[2].replace('.ctrl', self.custom_sim_id()),
                                                         'CornRM.90.dat'))
         assert not crop_from_env.crop_state.equals(crop_from_sim.crop_state)
 
@@ -81,8 +81,8 @@ class TestCornEnv(unittest.TestCase):
         dest = env._create_sim_operation_file('2')
 
         # Check the operation file is created
-        target_dest = CYCLES_DIR.joinpath('input',
-                                          self.fnames[1].replace(
+        target_dest = CYCLES_PATH.joinpath('input',
+                                           self.fnames[1].replace(
                                               '.operation', '2.operation'))
         assert dest == target_dest
 
@@ -106,8 +106,8 @@ class TestCornEnv(unittest.TestCase):
         env = CornEnv(self.fnames[0].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
         dest = env._create_sim_ctrl_file('new_operation2.operation', '2')
-        target_dest = CYCLES_DIR.joinpath('input',
-                                          self.fnames[0].replace(
+        target_dest = CYCLES_PATH.joinpath('input',
+                                           self.fnames[0].replace(
                                               '.ctrl', '2.ctrl'))
         assert dest == target_dest
         assert env.ctrl == Path(self.fnames[0].replace('.ctrl', '2.ctrl'))
@@ -222,7 +222,7 @@ class TestCornEnv(unittest.TestCase):
 
     @staticmethod
     def _call_cycles(ctrl):
-        subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_DIR)
+        subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_PATH)
 
 
 if __name__ == '__main__':

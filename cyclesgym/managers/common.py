@@ -49,24 +49,3 @@ class InputFileManager(Manager):
             s = self._to_str()
             with open(fname, 'w') as fp:
                 fp.write(s)
-
-
-if __name__ == '__main__':
-    path = Path.cwd().parent.joinpath('cycles', 'input', 'ContinuousCorn.operation')
-    parser = OperationManager(path)
-    print(parser)
-    parser.sort_operation()
-    print(parser)
-
-    path = Path.cwd().parent.joinpath('cycles', 'input', 'RockSprings.weather')
-    weather = WeatherManager(path)
-    print(weather.mutables.info())
-    print(weather.immutables.info())
-
-    path = Path.cwd().parent.joinpath('cycles', 'input', 'ContinuousCorn.ctrl')
-    ctrl = ControlManager(path)
-    print(ctrl)
-
-    path = Path.cwd().parent.joinpath('cycles', 'output', 'ContinuousCorn', 'CornRM.90.dat')
-    crop = CropManager(path)
-    print(crop.crop_state.head())

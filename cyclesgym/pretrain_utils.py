@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from imitation.data import types, rollout
-from cyclesgym.cycles_config import CYCLES_DIR
+from cyclesgym.paths import PROJECT_PATH
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -37,6 +37,7 @@ def collect_expert_trajectories(env, expert_policy=None, path=None,
     if path.suffix != '.pkl':
         raise ValueError('A valid path ending in .pkl should be provided to store the trajectories')
 
+    # Make sure parent dir exists
     path.parents[0].mkdir(exist_ok=True, parents=True)
 
     sample_until = rollout.make_sample_until(min_episodes=rollout_episodes,
@@ -160,7 +161,7 @@ def collect_corn_expert_trajectories(path=None):
 
     env = DummyVecEnv([env_creator])
     if path is None:
-        path = CYCLES_DIR.parents[0].joinpath('expert_trajectories',
+        path = PROJECT_PATH.joinpath('expert_trajectories',
                                           'corn_expert_trajectories.pkl')
     collect_expert_trajectories(env, path=path, expert_policy=expert_policy,
                                 rollout_episodes=10)
