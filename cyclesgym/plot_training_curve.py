@@ -1,17 +1,11 @@
-from cyclesgym.env import CornEnv
-import time
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
-from stable_baselines3 import DQN
 import pandas as pd
 import json
 from scipy.signal import savgol_filter
 
 from stable_baselines3.common.monitor import Monitor, get_monitor_files, \
     LoadMonitorResultsError
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.results_plotter import load_results, ts2xy
 import matplotlib.pyplot as plt
 
 from cyclesgym.paths import AGENTS_PATH

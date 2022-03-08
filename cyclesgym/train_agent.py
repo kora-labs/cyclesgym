@@ -1,17 +1,14 @@
-from cyclesgym.env import CornEnv, PartialObsCornEnv
+from cyclesgym.envs.common import PartialObsCornEnv
 import time
 import numpy as np
-from pathlib import Path
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 # from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 import wandb
 from wandb.integration.sb3 import WandbCallback
-import gym
 
 import yaml
 from yaml import Loader

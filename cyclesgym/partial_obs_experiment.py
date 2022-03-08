@@ -1,7 +1,6 @@
-from cyclesgym.env import PartialObsCornEnv
+from cyclesgym.envs.common import PartialObsCornEnv
 import numpy as np
 import time
-from pathlib import Path
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy

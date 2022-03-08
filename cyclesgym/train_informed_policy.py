@@ -1,11 +1,10 @@
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pygmo as pg
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from cyclesgym.dummy_policies import OpenLoopPolicy
-from cyclesgym.env import PartialObsCornEnv
+from cyclesgym.envs.common import PartialObsCornEnv
 from cyclesgym.informed_policy import InformedPolicy
 
 from cyclesgym.paths import FIGURES_PATH

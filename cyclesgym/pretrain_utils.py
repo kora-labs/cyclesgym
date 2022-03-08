@@ -1,12 +1,10 @@
-import gym
 import numpy as np
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.policies import ActorCriticPolicy
 from pathlib import Path
 from imitation.algorithms.bc import BC
-from cyclesgym.env import CornEnv, PartialObsCornEnv
+from cyclesgym.envs.common import PartialObsCornEnv
 from cyclesgym.dummy_policies import OpenLoopPolicy
 import shutil
 import torch as th
