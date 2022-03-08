@@ -5,10 +5,12 @@ import pandas as pd
 from cyclesgym.managers import *
 from cyclesgym.managers.utils import *
 
+from cyclesgym.paths import TEST_PATH
+
 
 class TestOperationManager(unittest.TestCase):
     def setUp(self):
-        self.fname = Path.cwd().joinpath('DummyOperation.operation')
+        self.fname = TEST_PATH.joinpath('DummyOperation.operation')
         self.manager = OperationManager(self.fname)
         self.target = {
             (1, 106, 'FIXED_FERTILIZATION'): {'MASS': 150., 'LAYER': 1.,
@@ -32,7 +34,7 @@ class TestOperationManager(unittest.TestCase):
 
 class TestCropManager(unittest.TestCase):
     def setUp(self):
-        self.fname = Path.cwd().joinpath('DummyCrop.dat')
+        self.fname = TEST_PATH.joinpath('DummyCrop.dat')
         self.manager = CropManager(self.fname)
         self.target = pd.DataFrame({'YEAR': pd.Series([1980, 1980], dtype=int),
                                'DOY': pd.Series([1, 2], dtype=int),
@@ -71,7 +73,7 @@ class TestCropManager(unittest.TestCase):
 
 class TestWeatherManager(unittest.TestCase):
     def setUp(self):
-        self.fname = Path.cwd().joinpath('DummyWeather.weather')
+        self.fname = TEST_PATH.joinpath('DummyWeather.weather')
         self.manager = WeatherManager(self.fname)
         self.target_immutables = pd.DataFrame({'LATITUDE': [40.687500],'ALTITUDE': [0.0], 'SCREENING_HEIGHT': [10.0]})
         self.target_mutables = pd.DataFrame({'YEAR': pd.Series([1980, 1980], dtype=int),
@@ -97,7 +99,7 @@ class TestWeatherManager(unittest.TestCase):
 
 class TestControlManager(unittest.TestCase):
     def setUp(self):
-        self.fname = Path.cwd().joinpath('DummyControl.ctrl')
+        self.fname = TEST_PATH.joinpath('DummyControl.ctrl')
         self.manager = ControlManager(self.fname)
         self.target ={'SIMULATION_START_YEAR'   :1980,
                       'SIMULATION_END_YEAR'     :1980,
@@ -134,7 +136,7 @@ class TestControlManager(unittest.TestCase):
 
 class TestSeasonManager(unittest.TestCase):
     def setUp(self):
-        self.fname = Path.cwd().joinpath('DummySeason.dat')
+        self.fname = TEST_PATH.joinpath('DummySeason.dat')
         self.manager = SeasonManager(self.fname)
         columns = ['YEAR', 'DOY', 'CROP', 'PLANT_YEAR', 'PLANT_DOY', 'TOTAL BIOMASS',
                    'ROOT BIOMASS', 'GRAIN YIELD', 'FORAGE YIELD', 'AG RESIDUE',

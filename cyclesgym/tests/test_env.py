@@ -6,7 +6,7 @@ import numpy as np
 from cyclesgym.envs.common import CornEnv
 from cyclesgym.managers import *
 
-from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 
 
 class TestCornEnv(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestCornEnv(unittest.TestCase):
                        'NCornTestNoFertilization.ctrl',
                        'NCornTestNoFertilization.operation']
         for n in self.fnames:
-            src = pathlib.Path.cwd().joinpath(n)
+            src = TEST_PATH.joinpath(n)
             dest = CYCLES_PATH.joinpath('input', n)
             shutil.copy(src, dest)
         self.custom_sim_id = lambda :'1' # This way the output does not depend on time and can be deleted by teardown
@@ -143,7 +143,7 @@ class TestCornEnv(unittest.TestCase):
     def test_check_new_action(self):
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
-        env.op_manager = OperationManager(Path.cwd().joinpath('NCornTest.operation'))
+        env.op_manager = OperationManager(TEST_PATH.joinpath('NCornTest.operation'))
 
         # No action on a day where nothing used to happen => Not new
         assert not env._check_new_action(0, 1980, 105)
@@ -163,9 +163,9 @@ class TestCornEnv(unittest.TestCase):
     def test_compute_obs(self):
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
-        env.weather_manager = WeatherManager(Path.cwd().joinpath(
+        env.weather_manager = WeatherManager(TEST_PATH.joinpath(
             'DummyWeather.weather'))
-        env.crop_manager = CropManager(Path.cwd().joinpath('DummyCrop.dat'))
+        env.crop_manager = CropManager(TEST_PATH.joinpath('DummyCrop.dat'))
         obs = env.compute_obs(1980, 1)
         target_obs = np.concatenate((np.arange(14), np.array([40.6875, 0, 10]),
                                      np.arange(7), np.array([1, 0])))
@@ -174,7 +174,7 @@ class TestCornEnv(unittest.TestCase):
     def test_compute_reward(self):
         env = CornEnv(self.fnames[2].replace('.ctrl', ''), delta=7, maxN=150,
                       n_actions=16)
-        env.season_manager = SeasonManager(Path.cwd().joinpath('DummySeason.dat'))
+        env.season_manager = SeasonManager(TEST_PATH.joinpath('DummySeason.dat'))
 
         bushel_per_tonne = 39.3680
         dollars_per_bushel = 4.53
