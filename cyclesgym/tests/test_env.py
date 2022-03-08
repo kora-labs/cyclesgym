@@ -3,7 +3,7 @@ import unittest
 import subprocess
 import shutil
 import numpy as np
-from cyclesgym.envs.common import CornEnv
+from cyclesgym.envs import CornEnv
 from cyclesgym.managers import *
 
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH

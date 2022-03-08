@@ -1,4 +1,4 @@
-from cyclesgym.envs.common import PartialObsCornEnv
+from cyclesgym.envs import PartialObsCornEnv
 import numpy as np
 import time
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv

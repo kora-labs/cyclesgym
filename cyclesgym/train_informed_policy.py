@@ -4,7 +4,7 @@ import pygmo as pg
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from cyclesgym.dummy_policies import OpenLoopPolicy
-from cyclesgym.envs.common import PartialObsCornEnv
+from cyclesgym.envs import PartialObsCornEnv
 from cyclesgym.informed_policy import InformedPolicy
 
 from cyclesgym.paths import FIGURES_PATH
