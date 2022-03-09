@@ -12,9 +12,9 @@ class SeasonManager(Manager):
         self.season_df = pd.DataFrame()
         super().__init__(fname)
 
-    def _parse(self):
-        if self.fname is not None:
-            with open(self.fname, 'r') as f:
+    def _parse(self, fname):
+        if fname is not None:
+            with open(fname, 'r') as f:
                 for i, l in enumerate(f.readlines()):
                     if i == 0:
                         columns = [n.strip(' \n') for n in l.split('\t')]

@@ -21,10 +21,10 @@ class CropManager(Manager):
     def _valid_output_file(self, fname):
         return super(CropManager, self)._valid_output_file(fname) and fname.suffix == '.dat'
 
-    def _parse(self):
-        if self.fname is not None:
+    def _parse(self, fname):
+        if fname is not None:
             # Read and remove unit of measurement row
-            df = pd.read_csv(self.fname, sep='\t').drop(index=0)
+            df = pd.read_csv(fname, sep='\t').drop(index=0)
             df.reset_index(drop=True, inplace=True)
 
             # Remove empty spaces and cast as floats

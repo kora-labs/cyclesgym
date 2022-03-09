@@ -34,7 +34,8 @@ class CornEnv(gym.Env):
         self.ctrl_base_manager = ControlManager(self.input_dir.joinpath(self.ctrl_base))
         self.ctrl_manager = ControlManager(self.input_dir.joinpath(self.ctrl))
         self.weather_manager = WeatherManager(self.input_dir.joinpath(self.ctrl_manager.ctrl_dict['WEATHER_FILE']))
-        self.op_manager = OperationManager(self.input_dir.joinpath(self.ctrl_manager.ctrl_dict['OPERATION_FILE']))
+        self.current_op_manager_file = self.input_dir.joinpath(self.ctrl_manager.ctrl_dict['OPERATION_FILE'])
+        self.op_manager = OperationManager(self.current_op_manager_file)
         self.crop_manager = CropManager(None)
         self.season_manager = SeasonManager(None)
         self.sim_id_list = []
@@ -201,7 +202,7 @@ class CornEnv(gym.Env):
                   'K': 0,
                   'S': 0}}
             self.op_manager.insert_new_operations(op, force=True)
-            self.op_manager.save(self.op_manager.fname)
+            self.op_manager.save(self.current_op_manager_file)
 
     @staticmethod
     def _udpate_operation(op, N_mass, mode='absolute'):
@@ -296,7 +297,8 @@ class CornEnv(gym.Env):
                 self.op_manager.insert_new_operations({(year, doy, op_type): new_op}, force=True)
 
         # Write operation file to be used in simulation
-        self.op_manager.save(self.op_manager.fname)
+        self.current_op_manager_file = dest
+        self.op_manager.save(self.current_op_manager_file)
         return dest
 
     def _create_sim_ctrl_file(self, op_name, sim_id):

@@ -4,10 +4,9 @@ from abc import ABC, abstractmethod
 
 class Manager(ABC):
     def __init__(self, fname=None):
-        self.fname = fname
-        if not self._valid_input_file(self.fname):
+        if not self._valid_input_file(fname):
             raise ValueError('File not existing. To initialize manager without a file, pass None as input')
-        self._parse()
+        self._parse(fname)
 
     @staticmethod
     def _valid_input_file(fname):
@@ -17,14 +16,15 @@ class Manager(ABC):
             return True
 
     @abstractmethod
-    def _parse(self):
+    def _parse(self, fname):
         raise NotImplementedError
 
     def update_file(self, fname):
-        self.fname = fname
-        if not self._valid_input_file(self.fname):
-            raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
-        self._parse()
+        # self.fname = fname
+        # if not self._valid_input_file(self.fname):
+        #     raise ValueError(f'{self.fname} File not existing. To initialize manager without a file, pass None as input')
+        # self._parse()
+        self.__init__(fname)
 
 
 class InputFileManager(Manager):

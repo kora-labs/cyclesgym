@@ -6,14 +6,13 @@ __all__ = ['ControlManager']
 
 class ControlManager(InputFileManager):
     def __init__(self, fname=None):
-        self.fname = fname
         self.ctrl_dict = dict()
         self._non_numeric = ['CROP_FILE', 'OPERATION_FILE', 'SOIL_FILE', 'WEATHER_FILE', 'REINIT_FILE']
         super().__init__(fname)
 
-    def _parse(self):
-        if self.fname is not None:
-            with open(self.fname, 'r') as f:
+    def _parse(self, fname):
+        if fname is not None:
+            with open(fname, 'r') as f:
                 for line in f.readlines():
                     if line.startswith(('\n', '#')):
                         pass

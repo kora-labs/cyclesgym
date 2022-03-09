@@ -23,9 +23,9 @@ class OperationManager(InputFileManager):
     def _valid_output_file(self, fname):
         return super(OperationManager, self)._valid_output_file(fname) and fname.suffix == '.operation'
 
-    def _parse(self):
-        if self.fname is not None:
-            with open(self.fname, 'r') as f:
+    def _parse(self, fname):
+        if fname is not None:
+            with open(fname, 'r') as f:
                 line_n = None
                 k = None
                 self.op_dict = dict()
