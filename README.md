@@ -42,5 +42,7 @@ Or, if you are using zsh:
 pip install -e .\[ENV\]
 ```
 
-**Note**: The [pygmo library](https://esa.github.io/pygmo2/) may give problems 
+If you also want to install some basic libraries to solve the environment, substitute .ENV with .ENV_SOLVERS
+
+**Note**: The [pygmo library](https://esa.github.io/pygmo2/) installed with the ENV_SOLVERS option may give problems 
 when installed via pip on Mac or Windows, see [here](https://esa.github.io/pygmo2/install.html). 
