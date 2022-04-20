@@ -1,5 +1,6 @@
 import os as _os
 import weakref
+from pathlib import Path
 
 from datetime import datetime
 from uuid import uuid4
@@ -16,6 +17,7 @@ class MyTemporaryDirectory(TemporaryDirectory):
     """
 
     def __init__(self, path):
+        assert isinstance(path, Path)
         _os.mkdir(path, 0o700)
         self.name = path
         self._finalizer = weakref.finalize(

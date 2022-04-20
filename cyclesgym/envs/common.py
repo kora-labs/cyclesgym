@@ -2,11 +2,15 @@ import gym
 from copy import copy, deepcopy
 import stat
 import subprocess
+from datetime import date
+import os
 
 from cyclesgym.managers import *
 from cyclesgym.paths import CYCLES_PATH, PROJECT_PATH
 from cyclesgym.envs.utils import *
 
+
+__all__ = ['CyclesEnv']
 
 class CyclesEnv(gym.Env):
     def __init__(self,
@@ -65,50 +69,168 @@ class CyclesEnv(gym.Env):
             'REINIT_FILE': REINIT_FILE,
         }
 
+        # Base control containing all the defaults
         self.ctrl_base_manager = ControlManager.from_dict(d)
+
+        # Simulation specific control used to determine sim-specific weather,
+        # operation, and similar
         self.ctrl_manager = copy(self.ctrl_base_manager)
         self.ctrl_file = None
-        self.op_base_manager = None
+
+        # Base operation with all the defaults (e.g. it may specify planting in
+        # simulation where the agent can only take fertilization actions)
         self.op_base_file = CYCLES_PATH.joinpath(
             'input', self.ctrl_base_manager.ctrl_dict['OPERATION_FILE'])
+        self.op_base_manager = OperationManager(self.op_base_file)
+
+        # Sim specific operation
         self.op_manager = None
         self.op_file = None
 
+        # Other simulation related files
+        self.crop_input_file = None
+        self.soil_input_file = None
+        self.weather_input_file = None
+
+        # Sim specific I/O directories and sim identifier
+        self.simID = None
         self.input_dir = None
         self.output_dir = None
-        self.simID = None
 
+        # Classes to compute states, rewards, implement actions
+        self.observer = None
+        self.implementer = None
+        self.rewarder = None
+
+        # Obs and action space
         self.observation_space = None
         self.action_space = None
 
-    def _init_managers(self):
-        raise NotImplementedError
+        # Date
+        self.date = None
 
-    def reset(self):
-        # Make sure cycles is executable
-        CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
-
-        # Create temporary directory for input and output files of this episode
+    def _create_io_dirs(self):
+        """
+        Create temporary directory for input and output files.
+        """
         self.simID = create_sim_id()
         self.input_dir = MyTemporaryDirectory(
             path=CYCLES_PATH.joinpath('input', self.simID))
         self.output_dir = MyTemporaryDirectory(
             path=CYCLES_PATH.joinpath('output', self.simID))
 
-        # Copy the manager containing the base operations and save it in the temporary input directory
+    def _create_operation_file(self):
+        """Create operation file by copying the base one."""
         self.op_manager = deepcopy(self.op_base_manager)
-        self.op_file = Path(self.input_dir.name).joinpath('operation.operation')
-        # self.op_manager.save(self.op_manager_file)
-        # !!!!!!!!!!This is a temporary operation file, remove this line
-        with open(self.op_file, 'w') as fp:
-            fp.write('\n')
+        self.op_file = Path(self.input_dir.name).joinpath(
+            'operation.operation')
+        self.op_manager.save(self.op_file)
 
+    def _create_crop_input_file(self):
+        """Creat crop file by simlinking the one indicated in the base ctrl."""
+        crop_file = self.ctrl_base_manager.ctrl_dict['CROP_FILE']
+        src = CYCLES_PATH.joinpath('input', crop_file)
+        if not src.exists():
+            raise ValueError(f'There is no {crop_file}  in '
+                             f'{CYCLES_PATH.joinpath("input")}')
+        dest = self.input_dir.name.joinpath('crop.crop')
+        self.crop_input_file = dest
+        os.symlink(src, dest)
+
+    def _create_soil_input_file(self):
+        """Creat soil file by simlinking the one indicated in the base ctrl."""
+        soil_file = self.ctrl_base_manager.ctrl_dict['SOIL_FILE']
+        src = CYCLES_PATH.joinpath('input', soil_file)
+        if not src.exists():
+            raise ValueError(f'There is no {soil_file}  in '
+                             f'{CYCLES_PATH.joinpath("input")}')
+        dest = self.input_dir.name.joinpath('soil.soil')
+        self.soil_input_file = dest
+        os.symlink(src, dest)
+
+    def _create_weather_input_file(self):
+        """Creat weather file by simlinking the one indicated in the base ctrl."""
+        weather_file = self.ctrl_base_manager.ctrl_dict['WEATHER_FILE']
+        src = CYCLES_PATH.joinpath('input', weather_file)
+        if not src.exists():
+            raise ValueError(f'There is no {weather_file}  in '
+                             f'{CYCLES_PATH.joinpath("input")}')
+        dest = self.input_dir.name.joinpath('weather.weather')
+        self.weather_input_file = dest
+        os.symlink(src, dest)
+
+    def _create_control_file(self):
+        """Create control file pointing to right input files."""
+        # Copy base control
         self.ctrl_manager = copy(self.ctrl_base_manager)
+
+        # Point to right input files
         self.ctrl_manager.ctrl_dict['OPERATION_FILE'] = \
             str(Path(*self.op_file.parts[-2:]))
+        self.ctrl_manager.ctrl_dict['CROP_FILE'] = \
+            str(Path(*self.crop_input_file.parts[-2:]))
+        self.ctrl_manager.ctrl_dict['SOIL_FILE'] = \
+            str(Path(*self.soil_input_file.parts[-2:]))
+        self.ctrl_manager.ctrl_dict['WEATHER_FILE'] = \
+            str(Path(*self.weather_input_file.parts[-2:]))
+
+        # Write control file in input directory
         self.ctrl_file = Path(self.input_dir.name).joinpath('control.ctrl')
         self.ctrl_manager.save(self.ctrl_file)
-        env._call_cycles(debug=True)
+
+    def _init_managers(self):
+        """
+        Init managers for states, actions, rewards.
+        """
+        raise NotImplementedError
+
+    def _init_observer(self):
+        """
+        Initialize state observer.
+        """
+        raise NotImplementedError
+
+    def _init_rewarder(self):
+        raise NotImplementedError
+
+    def _init_implementer(self):
+        raise NotImplementedError
+
+    def _common_reset(self):
+        """
+        Reset steps that must be performed regardless of observer and so on.
+
+        In particular, we make cycles executable, start tracking the date,
+        generate all the simulation specific files in the dedicated directory,
+        and run cycles (which saves all the outputs in the dedicated directory).
+        """
+        # Make sure cycles is executable
+        CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
+
+        # Init date
+        self.date = date(
+            year=self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR'],
+            month=1, day=1)
+
+        # Prepare cycles files
+        self._create_io_dirs()
+        self._create_crop_input_file()
+        self._create_weather_input_file()
+        self._create_soil_input_file()
+        self._create_operation_file()
+        self._create_control_file()
+        self._call_cycles(debug=True)
+
+    def reset(self):
+        """
+        Reset an episode.
+
+        First, it calls _common_reset to generate all the files and run cycles.
+        Subsequently, it initializes all the managers, observers, rewarders,
+        implementers, and returns the inital state. It is separated from the
+        _common_reset as different observers may require different inputs.
+        """
+        raise NotImplementedError
 
     def step(self, action):
         pass
@@ -158,5 +280,5 @@ if __name__ == '__main__':
         WEATHER_FILE = 'RockSprings.weather',
         REINIT_FILE='N / A',
         delta=7)
-    env.reset()
+    env._common_reset()
 
