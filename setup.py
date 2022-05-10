@@ -31,15 +31,10 @@ class new_install(install):
     """Post-installation for installation mode."""
     def __init__(self, *args, **kwargs):
         super(new_install, self).__init__(*args, **kwargs)
-
         print('POST INSTALL')
-        from pathlib import Path
         from install_cycles import install_cycles
-        cycles_path = Path.cwd().joinpath('cycles')
-        if not cycles_path.is_dir():
-            print(f'Cycles not found at {cycles_path}')
-            print(f'Installing cycles at {cycles_path}')
-            install_cycles()
+
+        install_cycles()
 
 
 setuptools.setup(
@@ -62,3 +57,9 @@ setuptools.setup(
         },
     cmdclass={'install': new_install},
 )
+
+
+# TODO: check for platform and include pygmo only for linux
+#       for other platform, include a PRE-installation script that installs pygmo
+#       using conda
+
