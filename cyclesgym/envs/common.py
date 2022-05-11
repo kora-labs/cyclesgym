@@ -12,6 +12,7 @@ from cyclesgym.envs.utils import *
 
 __all__ = ['CyclesEnv']
 
+
 class CyclesEnv(gym.Env):
     def __init__(self,
                  SIMULATION_START_YEAR,
@@ -118,6 +119,16 @@ class CyclesEnv(gym.Env):
             path=CYCLES_PATH.joinpath('input', self.simID))
         self.output_dir = MyTemporaryDirectory(
             path=CYCLES_PATH.joinpath('output', self.simID))
+
+    def _get_output_dir(self):
+        """
+        Get path where output files are stored.
+
+        Cycles automatically creates a directory with the same name as the
+        control file in the output directory to store the output. This function
+        returns a path pointing to such folder.
+        """
+        return self.output_dir.name.joinpath('control')
 
     def _create_operation_file(self):
         """Create operation file by copying the base one."""
