@@ -109,6 +109,15 @@ class CyclesEnv(gym.Env):
 
         # Date
         self.date = None
+        self.delta = delta
+
+        # Input files managers
+        self.input_managers = []
+        self.input_files = []
+
+        # Output files managers
+        self.output_managers = []
+        self.output_files = []
 
     def _create_io_dirs(self):
         """
@@ -189,13 +198,33 @@ class CyclesEnv(gym.Env):
         self.ctrl_file = Path(self.input_dir.name).joinpath('control.ctrl')
         self.ctrl_manager.save(self.ctrl_file)
 
-    def _init_managers(self):
+    def _init_input_managers(self):
         """
-        Init managers for states, actions, rewards.
+        Initialize all the input file managers and their file paths.
         """
         raise NotImplementedError
 
-    def _init_observer(self):
+    def _udpate_input_managers(self):
+        """
+        Update the input file managers based on the corresponding file paths.
+        """
+        for manager, file in zip(self.input_managers, self.input_files):
+            manager.update_file(file)
+
+    def _init_output_managers(self):
+        """
+        Initialize all the output file managers and their file paths.
+        """
+        raise NotImplementedError
+
+    def _update_output_managers(self):
+        """
+        Update the output file managers based on the corresponding file paths.
+        """
+        for manager, file in zip(self.output_managers, self.output_files):
+            manager.update_file(file)
+
+    def _init_observer(self, *args, **kwargs):
         """
         Initialize state observer.
         """
@@ -230,7 +259,11 @@ class CyclesEnv(gym.Env):
         self._create_soil_input_file()
         self._create_operation_file()
         self._create_control_file()
-        self._call_cycles(debug=True)
+        self._call_cycles_raw(debug=True)
+
+        # Initialize managers
+        self._init_input_managers()
+        self._init_output_managers()
 
     def reset(self):
         """
@@ -262,6 +295,7 @@ class CyclesEnv(gym.Env):
 
     def _call_cycles(self, debug=False):
         self._call_cycles_raw(debug=debug)
+        self._update_output_managers()
 
 
 if __name__ == '__main__':
