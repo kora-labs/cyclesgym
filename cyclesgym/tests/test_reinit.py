@@ -9,26 +9,8 @@ from cyclesgym.envs import CornNew
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.paths import TEST_PATH, CYCLES_PATH
 import subprocess
-
-
-def call_cycles(control_file, doy=None):
-    CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
-
-    # Run cycles
-    if doy is None:
-        subprocess.run(['./Cycles', '-b', control_file], cwd=CYCLES_PATH)
-    # Run cycles dumping reinit file
-    else:
-        subprocess.run(['./Cycles', '-b', '-l', str(doy), control_file], cwd=CYCLES_PATH)
-
-
-def load_output(control_file, fname='CornRM.90.dat'):
-    output_dir = CYCLES_PATH.joinpath('output', control_file)
-    df = pd.read_csv(output_dir.joinpath(fname), sep='\t').drop(0, 0)
-    df.columns = df.columns.str.strip(' ')
-    numeric_cols = df.columns[3:]
-    df[numeric_cols] = df[numeric_cols].astype(float)
-    return df
+import shutil
+import matplotlib.pyplot as plt
 
 
 def plot_trajectory(control_file):
@@ -77,13 +59,32 @@ def create_reinit_control_file(ctrl_file, doy, reinit_file):
     return new_ctrl_name
 
 
+def modify_reinit_file(reinit_file):
+    new_reinit = CYCLES_PATH.joinpath('input/', reinit_file.stem + '_modified.dat')
+    shutil.copy(reinit_file, new_reinit)
+
+    f = open(reinit_file, 'r')
+    linelist = f.readlines()
+    f.close()
+
+    # Re-open file here
+    f2 = open(new_reinit, 'w')
+    for i, line in enumerate(linelist):
+        if i == 2:
+            line = line.replace('0', '2')
+        f2.write(line)
+    f2.close()
+
+    return new_reinit
+
+
 class TestEnv(CornNew):
 
-    def __init__(self, reinit_file='N / A'):
+    def __init__(self, use_reinitialization=0, reinit_file='N / A'):
         CyclesEnv.__init__(self, SIMULATION_START_YEAR=1980,
                            SIMULATION_END_YEAR=1982,
                            ROTATION_SIZE=1,
-                           USE_REINITIALIZATION=0,
+                           USE_REINITIALIZATION=use_reinitialization,
                            ADJUSTED_YIELDS=0,
                            HOURLY_INFILTRATION=1,
                            AUTOMATIC_NITROGEN=0,
@@ -129,19 +130,35 @@ class TestEnv(CornNew):
 class TestReinit(unittest.TestCase):
 
     def setUp(self) -> None:
-        env_base = TestEnv()
-        env_base.reset()
-        env_base._call_cycles_reinit(debug=False, reinit=True, doy=100)
+        self.env_base = TestEnv()
+        self.env_base.reset()
+        self.env_base._call_cycles_reinit(debug=False, reinit=True, doy=365)
 
-        env_base.env_base._get_output_dir()
+        outdir = self.env_base._get_output_dir()
+        reinit_file = outdir.joinpath('reinit.dat')
+        new_reinit_file = modify_reinit_file(reinit_file)
 
-        env_reinit = TestEnv()
-
+        self.env_reinit = TestEnv(use_reinitialization=1, reinit_file='reinit_modified.dat')
+        self.env_reinit.reset()
+        self.env_reinit._call_cycles_reinit(debug=False)
 
     def test_reinit_is_markovian_in_non_vegetative_state(self):
         """In this test we check if the reinit file is enough to reproduce completely a run, in the case
         the reinit day (doy) is in a non-vegetative state, hence no state of the crop is necessary"""
-        pass
+        df = self.env_base.crop_output_manager.crop_state
+        df1 = self.env_reinit.crop_output_manager.crop_state
+
+        for col in range(4, 17):
+
+            same_reinit_error = np.max(np.abs((df.iloc[:, col] - df1.iloc[:, col]) / df.iloc[:, col]))
+            print(f'Maximum relative error for {df.columns[col]}\n'
+                  f'Same reinit {same_reinit_error * 100}')
+            plt.figure()
+            plt.plot(df1.iloc[:, col] - df.iloc[:, col], label='Resumed')
+            plt.title(df.columns[col])
+            plt.legend()
+
+        plt.show()
 
 if __name__ == '__main__':
     unittest.main()
