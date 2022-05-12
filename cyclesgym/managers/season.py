@@ -21,6 +21,7 @@ class SeasonManager(Manager):
                     elif i == 2:
                         value = [[float(v) if v.replace('.', '', 1).isdigit()
                                  else v for v in l.split()]]
+                    #TODO: generalize to more lines for multiyear
             self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
             date_to_ydoy(self.season_df, old_col_name='DATE',
                          new_col_names=['YEAR', 'DOY'], inplace=True)

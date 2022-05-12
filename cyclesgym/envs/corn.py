@@ -42,6 +42,9 @@ class CornNew(CyclesEnv):
                          WEATHER_FILE='RockSprings.weather',
                          REINIT_FILE='N / A',
                          delta=delta)
+        self._post_init_setup(n_actions, maxN)
+
+    def _post_init_setup(self, n_actions, maxN):
         self.weather_manager = None
         self.crop_output_file = None
         self.crop_output_manager = None
