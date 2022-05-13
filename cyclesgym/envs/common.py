@@ -282,19 +282,27 @@ class CyclesEnv(gym.Env):
     def render(self, mode="human"):
         pass
 
-    def _call_cycles_raw(self, debug=False):
+    def _call_cycles_raw(self, debug=False, reinit=False, doy=None):
         input_file = str(Path(*self.ctrl_file.parts[-2:])).replace('.ctrl', '')
 
         # Redirect cycles output unless we are debugging
-        if debug:
-            subprocess.run(['./Cycles', '-b', input_file], cwd=CYCLES_PATH,
-                           stdout=None)
-        else:
-            subprocess.run(['./Cycles', '-b', input_file], cwd=CYCLES_PATH,
-                           stdout=subprocess.DEVNULL)
 
-    def _call_cycles(self, debug=False):
-        self._call_cycles_raw(debug=debug)
+        strings = ['-b']
+        if debug:
+            stdout = None
+        else:
+            stdout = subprocess.DEVNULL
+
+        if reinit and doy:
+            strings.append('-l')
+            strings.append(str(doy))
+
+        strings.append(input_file)
+
+        subprocess.run(['./Cycles', *strings], cwd=CYCLES_PATH, stdout=stdout)
+
+    def _call_cycles(self, debug=False, reinit=False, doy=None):
+        self._call_cycles_raw(debug=debug, reinit=reinit, doy=doy)
         self._update_output_managers()
 
 

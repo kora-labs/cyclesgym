@@ -59,7 +59,7 @@ def create_reinit_control_file(ctrl_file, doy, reinit_file):
     return new_ctrl_name
 
 
-def modify_reinit_file(reinit_file):
+def modify_reinit_file(reinit_file, remove_second_year=True):
     new_reinit = CYCLES_PATH.joinpath('input/', reinit_file.stem + '_modified.dat')
     shutil.copy(reinit_file, new_reinit)
 
@@ -72,7 +72,8 @@ def modify_reinit_file(reinit_file):
     for i, line in enumerate(linelist):
         if i == 2:
             line = line.replace('0', '2')
-        f2.write(line)
+        if not remove_second_year or (remove_second_year and i <= 12):
+            f2.write(line)
     f2.close()
 
     return new_reinit
@@ -82,7 +83,7 @@ class TestEnv(CornNew):
 
     def __init__(self, use_reinitialization=0, reinit_file='N / A'):
         CyclesEnv.__init__(self, SIMULATION_START_YEAR=1980,
-                           SIMULATION_END_YEAR=1982,
+                           SIMULATION_END_YEAR=1983,
                            ROTATION_SIZE=1,
                            USE_REINITIALIZATION=use_reinitialization,
                            ADJUSTED_YIELDS=0,
@@ -136,29 +137,59 @@ class TestReinit(unittest.TestCase):
 
         outdir = self.env_base._get_output_dir()
         reinit_file = outdir.joinpath('reinit.dat')
-        new_reinit_file = modify_reinit_file(reinit_file)
+        new_reinit_file = modify_reinit_file(reinit_file, remove_second_year=True)
 
         self.env_reinit = TestEnv(use_reinitialization=1, reinit_file='reinit_modified.dat')
         self.env_reinit.reset()
         self.env_reinit._call_cycles_reinit(debug=False)
+
+        new_reinit_file = modify_reinit_file(reinit_file, remove_second_year=False)
+        self.env_reinit_2 = TestEnv(use_reinitialization=1, reinit_file='reinit_modified.dat')
+        self.env_reinit_2.reset()
+        self.env_reinit_2._call_cycles_reinit(debug=False)
 
     def test_reinit_is_markovian_in_non_vegetative_state(self):
         """In this test we check if the reinit file is enough to reproduce completely a run, in the case
         the reinit day (doy) is in a non-vegetative state, hence no state of the crop is necessary"""
         df = self.env_base.crop_output_manager.crop_state
         df1 = self.env_reinit.crop_output_manager.crop_state
+        df2 = self.env_reinit_2.crop_output_manager.crop_state
 
         for col in range(4, 17):
-
-            same_reinit_error = np.max(np.abs((df.iloc[:, col] - df1.iloc[:, col]) / df.iloc[:, col]))
-            print(f'Maximum relative error for {df.columns[col]}\n'
-                  f'Same reinit {same_reinit_error * 100}')
             plt.figure()
             plt.plot(df1.iloc[:, col] - df.iloc[:, col], label='Resumed')
+            plt.plot(df2.iloc[:, col] - df.iloc[:, col], label='Resumed from second year')
             plt.title(df.columns[col])
             plt.legend()
 
         plt.show()
+
+        for col in range(4, 17):
+            same_reinit_error = np.nanmax(np.abs((df.iloc[0:365*2, col] - df1.iloc[0:365*2, col]) / df.iloc[0:365*2, col]))
+            multiple_reinit_error = np.nanmax(np.abs((df.iloc[0:365*2, col] - df2.iloc[0:365*2, col]) / df.iloc[0:365*2, col]))
+
+            same_reinit_error_second_phase = np.nanmax(
+                np.abs((df.iloc[365 * 2+1:,  col] - df1.iloc[365 * 2+1:, col]) / df.iloc[365 * 2+1:, col]))
+            multiple_reinit_error_second_phase = np.nanmax(
+                np.abs((df.iloc[365 * 2+1:, col] - df2.iloc[365 * 2+1:, col]) / df.iloc[365 * 2+1:, col]))
+
+            if not np.isnan(multiple_reinit_error_second_phase):
+                self.assertLess(multiple_reinit_error_second_phase, 1e-1)
+
+            if not np.isnan(same_reinit_error_second_phase) and same_reinit_error_second_phase!=0:
+                self.assertGreater(same_reinit_error_second_phase, 1e-1)
+
+            if not np.isnan(same_reinit_error) and same_reinit_error!=0:
+                self.assertGreater(same_reinit_error, 1e-1)
+
+            if not np.isnan(multiple_reinit_error) and multiple_reinit_error!=0:
+                self.assertGreater(multiple_reinit_error, 1e-1)
+
+            print(f'Maximum relative error for {df.columns[col]}\n'
+                  f'Same reinit {same_reinit_error * 100}')
+            print(same_reinit_error, multiple_reinit_error, same_reinit_error_second_phase,
+                  multiple_reinit_error_second_phase)
+
 
 if __name__ == '__main__':
     unittest.main()

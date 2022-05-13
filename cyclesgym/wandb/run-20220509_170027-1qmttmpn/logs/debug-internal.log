@@ -1,0 +1,97 @@
+2022-05-09 17:00:28,176 INFO    MainThread:63871 [internal.py:wandb_internal():90] W&B internal server running at pid: 63871, started at: 2022-05-09 17:00:28.176120
+2022-05-09 17:00:28,178 INFO    WriterThread:63871 [datastore.py:open_for_write():75] open: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/run-1qmttmpn.wandb
+2022-05-09 17:00:28,178 DEBUG   SenderThread:63871 [sender.py:send():232] send: header
+2022-05-09 17:00:28,178 DEBUG   SenderThread:63871 [sender.py:send():232] send: run
+2022-05-09 17:00:28,370 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: check_version
+2022-05-09 17:00:28,371 INFO    SenderThread:63871 [dir_watcher.py:__init__():197] watching files in: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files
+2022-05-09 17:00:28,371 INFO    SenderThread:63871 [sender.py:_start_run_threads():811] run started: 1qmttmpn with start time 1652108427
+2022-05-09 17:00:28,371 DEBUG   SenderThread:63871 [sender.py:send():232] send: summary
+2022-05-09 17:00:28,371 INFO    SenderThread:63871 [sender.py:_save_file():948] saving file wandb-summary.json with policy end
+2022-05-09 17:00:28,372 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: check_version
+2022-05-09 17:00:28,431 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: run_start
+2022-05-09 17:00:28,434 DEBUG   HandlerThread:63871 [meta.py:__init__():35] meta init
+2022-05-09 17:00:28,434 DEBUG   HandlerThread:63871 [meta.py:__init__():49] meta init done
+2022-05-09 17:00:28,434 DEBUG   HandlerThread:63871 [meta.py:probe():209] probe
+2022-05-09 17:00:28,441 DEBUG   HandlerThread:63871 [meta.py:_setup_git():199] setup git
+2022-05-09 17:00:28,454 DEBUG   HandlerThread:63871 [meta.py:_setup_git():206] setup git done
+2022-05-09 17:00:28,454 DEBUG   HandlerThread:63871 [meta.py:_save_pip():53] save pip
+2022-05-09 17:00:28,455 DEBUG   HandlerThread:63871 [meta.py:_save_pip():67] save pip done
+2022-05-09 17:00:28,455 DEBUG   HandlerThread:63871 [meta.py:_save_conda():74] save conda
+2022-05-09 17:00:29,373 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/conda-environment.yaml
+2022-05-09 17:00:29,374 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-summary.json
+2022-05-09 17:00:29,374 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/requirements.txt
+2022-05-09 17:00:30,852 DEBUG   HandlerThread:63871 [meta.py:_save_conda():84] save conda done
+2022-05-09 17:00:30,852 DEBUG   HandlerThread:63871 [meta.py:probe():247] probe done
+2022-05-09 17:00:30,935 DEBUG   SenderThread:63871 [sender.py:send():232] send: files
+2022-05-09 17:00:30,935 INFO    SenderThread:63871 [sender.py:_save_file():948] saving file wandb-metadata.json with policy now
+2022-05-09 17:00:30,936 DEBUG   SenderThread:63871 [sender.py:send():232] send: config
+2022-05-09 17:00:30,962 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: stop_status
+2022-05-09 17:00:30,963 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: stop_status
+2022-05-09 17:00:31,107 DEBUG   SenderThread:63871 [sender.py:send():232] send: telemetry
+2022-05-09 17:00:31,374 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_modified():257] file/dir modified: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/conda-environment.yaml
+2022-05-09 17:00:31,375 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-metadata.json
+2022-05-09 17:00:31,375 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/output.log
+2022-05-09 17:00:31,542 INFO    Thread-11 :63871 [upload_job.py:push():132] Uploaded file /tmp/tmpy5m21gp2wandb/191uny5k-wandb-metadata.json
+2022-05-09 17:00:36,725 DEBUG   SenderThread:63871 [sender.py:send():232] send: telemetry
+2022-05-09 17:00:36,824 INFO    HandlerThread:63871 [handler.py:handle_tbrecord():723] handling tbrecord: tbrecord {
+  log_dir: "./runs/1qmttmpn/PPO_1"
+  save: true
+}
+
+2022-05-09 17:00:36,824 DEBUG   HandlerThread:63871 [config_util.py:dict_from_config_file():100] no default config file found in config-defaults.yaml
+2022-05-09 17:00:36,836 DEBUG   SenderThread:63871 [sender.py:send():232] send: tbrecord
+2022-05-09 17:00:36,837 DEBUG   SenderThread:63871 [sender.py:send():232] send: config
+2022-05-09 17:00:36,838 DEBUG   SenderThread:63871 [sender.py:send():232] send: files
+2022-05-09 17:00:36,838 INFO    SenderThread:63871 [sender.py:_save_file():948] saving file events.out.tfevents.1652108436.luca-All-Series.63825.0 with policy live
+2022-05-09 17:00:36,839 DEBUG   SenderThread:63871 [sender.py:send():232] send: telemetry
+2022-05-09 17:00:36,843 DEBUG   SenderThread:63871 [sender.py:send():232] send: telemetry
+2022-05-09 17:00:36,843 DEBUG   SenderThread:63871 [sender.py:send():232] send: exit
+2022-05-09 17:00:36,843 INFO    SenderThread:63871 [sender.py:send_exit():368] handling exit code: 1
+2022-05-09 17:00:36,843 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: poll_exit
+2022-05-09 17:00:36,843 INFO    SenderThread:63871 [sender.py:send_exit():370] handling runtime: 8
+2022-05-09 17:00:36,846 INFO    SenderThread:63871 [sender.py:_save_file():948] saving file wandb-summary.json with policy end
+2022-05-09 17:00:36,846 INFO    SenderThread:63871 [sender.py:send_exit():376] send defer
+2022-05-09 17:00:36,846 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: poll_exit
+2022-05-09 17:00:36,846 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: defer
+2022-05-09 17:00:36,847 INFO    HandlerThread:63871 [handler.py:handle_request_defer():164] handle defer: 0
+2022-05-09 17:00:36,847 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: defer
+2022-05-09 17:00:36,847 INFO    SenderThread:63871 [sender.py:send_request_defer():385] handle sender defer: 0
+2022-05-09 17:00:36,847 INFO    SenderThread:63871 [sender.py:transition_state():389] send defer: 1
+2022-05-09 17:00:36,847 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: defer
+2022-05-09 17:00:36,847 INFO    HandlerThread:63871 [handler.py:handle_request_defer():164] handle defer: 1
+2022-05-09 17:00:36,883 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: defer
+2022-05-09 17:00:36,883 INFO    SenderThread:63871 [sender.py:send_request_defer():385] handle sender defer: 1
+2022-05-09 17:00:36,883 INFO    SenderThread:63871 [sender.py:transition_state():389] send defer: 2
+2022-05-09 17:00:36,883 DEBUG   SenderThread:63871 [sender.py:send():232] send: stats
+2022-05-09 17:00:36,884 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: defer
+2022-05-09 17:00:36,884 INFO    HandlerThread:63871 [handler.py:handle_request_defer():164] handle defer: 2
+2022-05-09 17:00:36,884 DEBUG   SenderThread:63871 [sender.py:send_request():246] send_request: defer
+2022-05-09 17:00:36,884 INFO    SenderThread:63871 [sender.py:send_request_defer():385] handle sender defer: 2
+2022-05-09 17:00:36,884 INFO    SenderThread:63871 [sender.py:transition_state():389] send defer: 3
+2022-05-09 17:00:36,884 DEBUG   HandlerThread:63871 [handler.py:handle_request():141] handle_request: defer
+2022-05-09 17:00:36,884 INFO    HandlerThread:63871 [handler.py:handle_request_defer():164] handle defer: 3
+2022-05-09 17:00:37,355 INFO    Thread-14 :63871 [upload_job.py:push():132] Uploaded file /tmp/tmpy5m21gp2wandb/3hy1oa6q-events.out.tfevents.1652108436.luca-All-Series.63825.0
+2022-05-09 17:00:37,376 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_modified():257] file/dir modified: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-summary.json
+2022-05-09 17:00:37,376 INFO    Thread-7  :63871 [dir_watcher.py:_on_file_created():244] file/dir created: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/events.out.tfevents.1652108436.luca-All-Series.63825.0
+2022-05-09 17:00:38,756 WARNING MainThread:63871 [internal.py:wandb_internal():153] Internal process interrupt: 1
+2022-05-09 17:00:38,935 WARNING MainThread:63871 [internal.py:wandb_internal():153] Internal process interrupt: 2
+2022-05-09 17:00:38,935 ERROR   MainThread:63871 [internal.py:wandb_internal():156] Internal process interrupted.
+2022-05-09 17:00:39,884 INFO    WriterThread:63871 [datastore.py:close():279] close: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/run-1qmttmpn.wandb
+2022-05-09 17:00:39,884 INFO    SenderThread:63871 [sender.py:finish():1110] shutting down sender
+2022-05-09 17:00:39,884 INFO    SenderThread:63871 [dir_watcher.py:finish():312] shutting down directory watcher
+2022-05-09 17:00:40,378 INFO    SenderThread:63871 [dir_watcher.py:finish():342] scan: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files
+2022-05-09 17:00:40,379 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-summary.json wandb-summary.json
+2022-05-09 17:00:40,379 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/conda-environment.yaml conda-environment.yaml
+2022-05-09 17:00:40,385 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/events.out.tfevents.1652108436.luca-All-Series.63825.0 events.out.tfevents.1652108436.luca-All-Series.63825.0
+2022-05-09 17:00:40,391 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/output.log output.log
+2022-05-09 17:00:40,391 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-metadata.json wandb-metadata.json
+2022-05-09 17:00:40,391 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/config.yaml config.yaml
+2022-05-09 17:00:40,391 INFO    SenderThread:63871 [dir_watcher.py:finish():356] scan save: /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/requirements.txt requirements.txt
+2022-05-09 17:00:40,395 INFO    SenderThread:63871 [file_pusher.py:finish():145] shutting down file pusher
+2022-05-09 17:00:40,395 INFO    SenderThread:63871 [file_pusher.py:join():150] waiting for file pusher
+2022-05-09 17:00:40,866 INFO    Thread-16 :63871 [upload_job.py:push():132] Uploaded file /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/conda-environment.yaml
+2022-05-09 17:00:40,873 INFO    Thread-15 :63871 [upload_job.py:push():132] Uploaded file /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/wandb-summary.json
+2022-05-09 17:00:40,901 INFO    Thread-18 :63871 [upload_job.py:push():132] Uploaded file /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/requirements.txt
+2022-05-09 17:00:40,909 INFO    Thread-17 :63871 [upload_job.py:push():132] Uploaded file /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170027-1qmttmpn/files/config.yaml
+2022-05-09 17:00:43,847 INFO    HandlerThread:63871 [handler.py:finish():806] shutting down handler
+2022-05-09 17:00:43,847 INFO    MainThread:63871 [internal.py:handle_exit():80] Internal process exited

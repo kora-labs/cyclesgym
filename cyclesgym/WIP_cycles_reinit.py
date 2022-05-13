@@ -8,15 +8,16 @@ import shutil
 
 from cyclesgym.paths import CYCLES_PATH
 
+
 def call_cycles(control_file, doy=None):
     CYCLES_PATH.joinpath('Cycles').chmod(stat.S_IEXEC)
 
     # Run cycles
     if doy is None:
-        subprocess.run(['./Cycles', '-b', control_file], cwd=cycles_dir)
+        subprocess.run(['./Cycles', '-b', control_file], cwd=CYCLES_PATH)
     # Run cycles dumping reinit file
     else:
-        subprocess.run(['./Cycles', '-b', '-l', str(doy), control_file], cwd=cycles_dir)
+        subprocess.run(['./Cycles', '-b', '-l', str(doy), control_file], cwd=CYCLES_PATH)
 
 
 def load_output(control_file, fname='CornRM.90.dat'):
@@ -57,7 +58,7 @@ def create_reinit_control_file(ctrl_file, doy, reinit_file):
 
     f = open(old_ctrl, 'r')
     linelist = f.readlines()
-    f.close
+    f.close()
 
     # Re-open file here
     f2 = open(new_ctrl, 'w')
@@ -85,8 +86,7 @@ def main():
     call_cycles(new_control, doy=None)
     df1 = load_output(new_control)
 
-
-    control_random = 'ContinuousCornReinit200random'
+    control_random = 'ContinuousCornReinit' + str(doy) + 'random'
     call_cycles(control_random)
     df2 = load_output(control_random)
 
@@ -98,6 +98,8 @@ def main():
         plt.figure()
         plt.plot(df1.iloc[:, col] - df.iloc[:, col], label='Resumed')
         plt.plot(df2.iloc[:, col] - df.iloc[:, col], label='Random resumed')
+        for i in range(3):
+            plt.axvline(i*365+doy)
         plt.title(df.columns[col])
         plt.legend()
     plt.show()

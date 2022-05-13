@@ -1,0 +1,69 @@
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_setup.py:_flush():76] Loading settings from /home/luca/.config/wandb/settings
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_setup.py:_flush():76] Loading settings from wandb/settings
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_setup.py:_flush():76] Loading settings from environment variables: {'entity': 'koralabs', 'project': 'cyclesgym', 'root_dir': '/home/luca/Projects/plant_science/cyclesgym/cyclesgym', 'sweep_id': '95ly9bmf', 'run_id': 'suyodzcd', 'sweep_param_path': '/home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/sweep-95ly9bmf/config-suyodzcd.yaml'}
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'cyclesgym/train_agent.py', 'program': 'train_agent.py'}
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_init.py:_log_setup():428] Logging user logs to /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_151702-suyodzcd/logs/debug.log
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_init.py:_log_setup():429] Logging internal logs to /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_151702-suyodzcd/logs/debug-internal.log
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_init.py:init():462] calling init triggers
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_init.py:init():465] wandb.init called with sweep_config: {'batch_size': 64, 'bc': 0, 'common_layers': 2, 'common_neurons': 32, 'ent_coef': 1e-05, 'gae_lambda': 0.95, 'learning_rate': 0.0003, 'n_epochs': 10, 'n_steps': 2048, 'n_years': 2000, 'pi_layers': 0, 'pi_neurons': 0, 'seed': 2, 'vf_layers': 0, 'vf_neurons': 0}
+config: {}
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [wandb_init.py:init():515] starting backend
+2022-05-09 15:17:02,987 INFO    Thread-2  :44898 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2022-05-09 15:17:02,997 INFO    Thread-2  :44898 [backend.py:ensure_launched():217] starting backend process...
+2022-05-09 15:17:03,000 INFO    Thread-2  :44898 [backend.py:ensure_launched():222] started backend process with pid: 44982
+2022-05-09 15:17:03,001 INFO    Thread-2  :44898 [wandb_init.py:init():525] backend started and connected
+2022-05-09 15:17:03,007 INFO    Thread-2  :44898 [wandb_init.py:init():596] updated telemetry
+2022-05-09 15:17:03,020 INFO    Thread-2  :44898 [wandb_init.py:init():627] communicating run to backend with 30 second timeout
+2022-05-09 15:17:04,554 INFO    Thread-2  :44898 [wandb_run.py:_on_init():1924] communicating current version
+2022-05-09 15:17:04,623 INFO    Thread-2  :44898 [wandb_run.py:_on_init():1928] got version response 
+2022-05-09 15:17:04,623 INFO    Thread-2  :44898 [wandb_init.py:init():662] starting run threads in backend
+2022-05-09 15:17:08,637 INFO    Thread-2  :44898 [wandb_run.py:_config_callback():1136] config_cb None None {'batch_size': 64, 'bc': 0, 'common_layers': 2, 'common_neurons': 32, 'ent_coef': 1e-05, 'gae_lambda': 0.95, 'learning_rate': 0.0003, 'n_epochs': 10, 'n_steps': 2048, 'n_years': 2000, 'pi_layers': 0, 'pi_neurons': 0, 'seed': 2, 'vf_layers': 0, 'vf_neurons': 0}
+2022-05-09 15:17:08,666 INFO    Thread-2  :44898 [wandb_run.py:_console_start():1898] atexit reg
+2022-05-09 15:17:08,666 INFO    Thread-2  :44898 [wandb_run.py:_redirect():1771] redirect: SettingsConsole.REDIRECT
+2022-05-09 15:17:08,667 INFO    Thread-2  :44898 [wandb_run.py:_redirect():1776] Redirecting console.
+2022-05-09 15:17:08,667 ERROR   Thread-2  :44898 [wandb_run.py:_redirect():1835] Failed to redirect.
+Traceback (most recent call last):
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/wandb_run.py", line 1828, in _redirect
+    out_redir.install()
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 702, in install
+    _WSCH.add_fd(self._pipe_read_fd)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 652, in add_fd
+    self._register()
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 637, in _register
+    old_handler = signal.signal(signal.SIGWINCH, lambda *_: None)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/signal.py", line 47, in signal
+    handler = _signal.signal(_enum_to_int(signalnum), _enum_to_int(handler))
+ValueError: signal only works in main thread
+2022-05-09 15:17:08,668 INFO    Thread-2  :44898 [wandb_init.py:init():688] run started, returning control to user process
+2022-05-09 15:17:19,411 INFO    Thread-2  :44898 [wandb_run.py:_tensorboard_callback():1244] tensorboard callback: ./runs/suyodzcd/PPO_1, True
+2022-05-09 15:17:19,414 INFO    Thread-2  :44898 [wandb_run.py:_config_callback():1136] config_cb None None {'algo': 'PPO', 'policy_class': "<class 'stable_baselines3.common.policies.ActorCriticPolicy'>", 'device': 'cpu', 'env': '<stable_baselines3.common.vec_env.subproc_vec_env.SubprocVecEnv object at 0x7f560ba72910>', '_vec_normalize_env': 'None', 'verbose': 0, 'policy_kwargs': "{'net_arch': [32, 32]}", 'observation_space': 'Box([-10. -10.], [10. 10.], (2,), float32)', 'action_space': 'Discrete(11)', 'n_envs': 4, 'num_timesteps': 0, '_total_timesteps': 106000, '_num_timesteps_at_start': 0, 'eval_env': 'None', 'action_noise': 'None', 'start_time': 1652102234.441452, 'policy': 'ActorCriticPolicy(\n  (features_extractor): FlattenExtractor(\n    (flatten): Flatten(start_dim=1, end_dim=-1)\n  )\n  (mlp_extractor): MlpExtractor(\n    (shared_net): Sequential(\n      (0): Linear(in_features=2, out_features=32, bias=True)\n      (1): Tanh()\n      (2): Linear(in_features=32, out_features=32, bias=True)\n      (3): Tanh()\n    )\n    (policy_net): Sequential()\n    (value_net): Sequential()\n  )\n  (action_net): Linear(in_features=32, out_features=11, bias=True)\n  (value_net): Linear(in_features=32, out_features=1, bias=True)\n)', 'tensorboard_log': './runs/suyodzcd', 'lr_schedule': '<function constant_fn.<locals>.func at 0x7f560c8b7c10>', '_last_obs': '[[1. 0.]\n [1. 0.]\n [1. 0.]\n [1. 0.]]', '_last_episode_starts': '[ True  True  True  True]', '_last_original_obs': 'None', '_episode_num': 0, 'use_sde': 'False', 'sde_sample_freq': -1, '_current_progress_remaining': 1, 'ep_info_buffer': 'deque([], maxlen=100)', 'ep_success_buffer': 'deque([], maxlen=100)', '_n_updates': 0, '_logger': '<stable_baselines3.common.logger.Logger object at 0x7f560ba0cfa0>', '_custom_logger': 'False', 'gamma': 0.99, 'vf_coef': 0.5, 'max_grad_norm': 0.5, 'rollout_buffer': '<stable_baselines3.common.buffers.RolloutBuffer object at 0x7f560ba18a60>', 'clip_range': '<function constant_fn.<locals>.func at 0x7f560ba1df70>', 'clip_range_vf': 'None', 'target_kl': 'None'}
+2022-05-09 15:52:08,266 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:08,267 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"errors":[{"message":"Error 1040: Too many connections","path":["agentHeartbeat"]}],"data":{"agentHeartbeat":null}}
+2022-05-09 15:52:20,018 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:20,018 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"error":"Error 1040: Too many connections"}
+2022-05-09 15:52:22,687 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:22,687 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"error":"Error 1040: Too many connections"}
+2022-05-09 15:52:22,687 ERROR   Thread-1  :44898 [retry.py:__call__():126] Retry attempt failed:
+Traceback (most recent call last):
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/retry.py", line 102, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/internal/internal_api.py", line 140, in execute
+    return self.client.execute(*args, **kwargs)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/transport/requests.py", line 39, in execute
+    request.raise_for_status()
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/requests/models.py", line 960, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 500 Server Error: Internal Server Error for url: https://api.wandb.ai/graphql
+2022-05-09 15:52:26,998 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:26,998 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"error":"Error 1040: Too many connections"}
+2022-05-09 15:52:38,700 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:38,701 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"error":"Error 1040: Too many connections"}
+2022-05-09 15:52:58,533 ERROR   Thread-1  :44898 [internal_api.py:execute():143] 500 response executing GraphQL.
+2022-05-09 15:52:58,534 ERROR   Thread-1  :44898 [internal_api.py:execute():144] {"error":"Error 1040: Too many connections"}
+2022-05-09 15:55:40,321 INFO    Thread-2  :44898 [wandb_run.py:_finish():1685] finishing run koralabs/cyclesgym/suyodzcd
+2022-05-09 15:55:40,321 INFO    Thread-2  :44898 [wandb_run.py:_atexit_cleanup():1867] got exitcode: 1
+2022-05-09 15:55:40,321 INFO    Thread-2  :44898 [wandb_run.py:_restore():1839] restore

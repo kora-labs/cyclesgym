@@ -1,0 +1,42 @@
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_setup.py:_flush():76] Loading settings from /home/luca/.config/wandb/settings
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_setup.py:_flush():76] Loading settings from wandb/settings
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_setup.py:_flush():76] Loading settings from environment variables: {'entity': 'koralabs', 'project': 'cyclesgym', 'root_dir': '/home/luca/Projects/plant_science/cyclesgym/cyclesgym', 'sweep_id': 'dqzeixc6', 'run_id': '6xgasp4h', 'sweep_param_path': '/home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/sweep-dqzeixc6/config-6xgasp4h.yaml'}
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'cyclesgym/train_agent.py', 'program': 'train_agent.py'}
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_init.py:_log_setup():428] Logging user logs to /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170254-6xgasp4h/logs/debug.log
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_init.py:_log_setup():429] Logging internal logs to /home/luca/Projects/plant_science/cyclesgym/cyclesgym/wandb/run-20220509_170254-6xgasp4h/logs/debug-internal.log
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_init.py:init():462] calling init triggers
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_init.py:init():465] wandb.init called with sweep_config: {'batch_size': 64, 'bc': 0, 'common_layers': 2, 'common_neurons': 32, 'ent_coef': 1e-05, 'gae_lambda': 0.95, 'learning_rate': 0.0003, 'n_epochs': 10, 'n_steps': 2048, 'n_years': 2000, 'pi_layers': 0, 'pi_neurons': 0, 'seed': 2, 'vf_layers': 0, 'vf_neurons': 0}
+config: {}
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [wandb_init.py:init():515] starting backend
+2022-05-09 17:02:54,744 INFO    Thread-2  :64335 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2022-05-09 17:02:54,753 INFO    Thread-2  :64335 [backend.py:ensure_launched():217] starting backend process...
+2022-05-09 17:02:54,758 INFO    Thread-2  :64335 [backend.py:ensure_launched():222] started backend process with pid: 64369
+2022-05-09 17:02:54,759 INFO    Thread-2  :64335 [wandb_init.py:init():525] backend started and connected
+2022-05-09 17:02:54,768 INFO    Thread-2  :64335 [wandb_init.py:init():596] updated telemetry
+2022-05-09 17:02:54,798 INFO    Thread-2  :64335 [wandb_init.py:init():627] communicating run to backend with 30 second timeout
+2022-05-09 17:02:56,522 INFO    Thread-2  :64335 [wandb_run.py:_on_init():1924] communicating current version
+2022-05-09 17:02:56,578 INFO    Thread-2  :64335 [wandb_run.py:_on_init():1928] got version response 
+2022-05-09 17:02:56,579 INFO    Thread-2  :64335 [wandb_init.py:init():662] starting run threads in backend
+2022-05-09 17:03:00,259 INFO    Thread-2  :64335 [wandb_run.py:_config_callback():1136] config_cb None None {'batch_size': 64, 'bc': 0, 'common_layers': 2, 'common_neurons': 32, 'ent_coef': 1e-05, 'gae_lambda': 0.95, 'learning_rate': 0.0003, 'n_epochs': 10, 'n_steps': 2048, 'n_years': 2000, 'pi_layers': 0, 'pi_neurons': 0, 'seed': 2, 'vf_layers': 0, 'vf_neurons': 0}
+2022-05-09 17:03:00,285 INFO    Thread-2  :64335 [wandb_run.py:_console_start():1898] atexit reg
+2022-05-09 17:03:00,285 INFO    Thread-2  :64335 [wandb_run.py:_redirect():1771] redirect: SettingsConsole.REDIRECT
+2022-05-09 17:03:00,286 INFO    Thread-2  :64335 [wandb_run.py:_redirect():1776] Redirecting console.
+2022-05-09 17:03:00,286 ERROR   Thread-2  :64335 [wandb_run.py:_redirect():1835] Failed to redirect.
+Traceback (most recent call last):
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/wandb_run.py", line 1828, in _redirect
+    out_redir.install()
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 702, in install
+    _WSCH.add_fd(self._pipe_read_fd)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 652, in add_fd
+    self._register()
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/site-packages/wandb/sdk/lib/redirect.py", line 637, in _register
+    old_handler = signal.signal(signal.SIGWINCH, lambda *_: None)
+  File "/home/luca/miniconda3/envs/cyclesgym/lib/python3.8/signal.py", line 47, in signal
+    handler = _signal.signal(_enum_to_int(signalnum), _enum_to_int(handler))
+ValueError: signal only works in main thread
+2022-05-09 17:03:00,287 INFO    Thread-2  :64335 [wandb_init.py:init():688] run started, returning control to user process
+2022-05-09 17:03:05,520 INFO    Thread-2  :64335 [wandb_run.py:_tensorboard_callback():1244] tensorboard callback: ./runs/6xgasp4h/PPO_1, True
+2022-05-09 17:03:05,527 INFO    Thread-2  :64335 [wandb_run.py:_config_callback():1136] config_cb None None {'algo': 'PPO', 'policy_class': "<class 'stable_baselines3.common.policies.ActorCriticPolicy'>", 'device': 'cpu', 'env': '<stable_baselines3.common.vec_env.subproc_vec_env.SubprocVecEnv object at 0x7f67d59bdfd0>', '_vec_normalize_env': 'None', 'verbose': 0, 'policy_kwargs': "{'net_arch': [32, 32]}", 'observation_space': 'Box([-10. -10.], [10. 10.], (2,), float32)', 'action_space': 'Discrete(11)', 'n_envs': 4, 'num_timesteps': 0, '_total_timesteps': 106000, '_num_timesteps_at_start': 0, 'eval_env': 'None', 'action_noise': 'None', 'start_time': 1652108585.3725753, 'policy': 'ActorCriticPolicy(\n  (features_extractor): FlattenExtractor(\n    (flatten): Flatten(start_dim=1, end_dim=-1)\n  )\n  (mlp_extractor): MlpExtractor(\n    (shared_net): Sequential(\n      (0): Linear(in_features=2, out_features=32, bias=True)\n      (1): Tanh()\n      (2): Linear(in_features=32, out_features=32, bias=True)\n      (3): Tanh()\n    )\n    (policy_net): Sequential()\n    (value_net): Sequential()\n  )\n  (action_net): Linear(in_features=32, out_features=11, bias=True)\n  (value_net): Linear(in_features=32, out_features=1, bias=True)\n)', 'tensorboard_log': './runs/6xgasp4h', 'lr_schedule': '<function constant_fn.<locals>.func at 0x7f67d681fc10>', '_last_obs': '[[1. 0.]\n [1. 0.]\n [1. 0.]\n [1. 0.]]', '_last_episode_starts': '[ True  True  True  True]', '_last_original_obs': 'None', '_episode_num': 0, 'use_sde': 'False', 'sde_sample_freq': -1, '_current_progress_remaining': 1, 'ep_info_buffer': 'deque([], maxlen=100)', 'ep_success_buffer': 'deque([], maxlen=100)', '_n_updates': 0, '_logger': '<stable_baselines3.common.logger.Logger object at 0x7f67d5980190>', '_custom_logger': 'False', 'gamma': 0.99, 'vf_coef': 0.5, 'max_grad_norm': 0.5, 'rollout_buffer': '<stable_baselines3.common.buffers.RolloutBuffer object at 0x7f67d59bd3a0>', 'clip_range': '<function constant_fn.<locals>.func at 0x7f67d5986f70>', 'clip_range_vf': 'None', 'target_kl': 'None'}
+2022-05-09 17:06:11,367 INFO    Thread-2  :64335 [wandb_run.py:_finish():1685] finishing run koralabs/cyclesgym/6xgasp4h
+2022-05-09 17:06:11,367 INFO    Thread-2  :64335 [wandb_run.py:_atexit_cleanup():1867] got exitcode: 1
+2022-05-09 17:06:11,368 INFO    Thread-2  :64335 [wandb_run.py:_restore():1839] restore

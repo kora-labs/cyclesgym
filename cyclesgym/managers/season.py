@@ -15,13 +15,13 @@ class SeasonManager(Manager):
     def _parse(self, fname):
         if fname is not None:
             with open(fname, 'r') as f:
+                value = []
                 for i, l in enumerate(f.readlines()):
                     if i == 0:
                         columns = [n.strip(' \n') for n in l.split('\t')]
-                    elif i == 2:
-                        value = [[float(v) if v.replace('.', '', 1).isdigit()
-                                 else v for v in l.split()]]
-                    #TODO: generalize to more lines for multiyear
+                    elif i >= 2:
+                        value.append([float(v) if v.replace('.', '', 1).isdigit()
+                                 else v for v in l.split()])
             self.season_df = pd.DataFrame(data=value, index=None, columns=columns)
             date_to_ydoy(self.season_df, old_col_name='DATE',
                          new_col_names=['YEAR', 'DOY'], inplace=True)

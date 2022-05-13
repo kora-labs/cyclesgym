@@ -81,7 +81,7 @@ class CornNew(CyclesEnv):
         self.observer = WeatherCropDoyNObserver(
             weather_manager=self.weather_manager,
             crop_manager=self.crop_output_manager,
-            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
+            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
         )
 
     def _init_rewarder(self, *args, **kwargs):
