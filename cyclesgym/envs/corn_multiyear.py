@@ -1,59 +1,47 @@
 from datetime import timedelta
-
-import pandas as pd
-
-from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.corn_old import CornEnvOld
-from cyclesgym.envs.observers import *
-from cyclesgym.envs.rewarders import *
-from cyclesgym.envs.implementers import *
 from cyclesgym.envs.corn import CornNew
-from cyclesgym.utils import plot_two_environments
 from typing import Tuple
 import shutil
 import numpy as np
 import pathlib
-from gym import spaces
 
-from cyclesgym.managers import *
-
-__all__ = ['CornMultiYearContinue', 'CornMultiYear']
+__all__ = ['CornMultiYear']
 
 
-class CornMultiYearContinue(CornNew):
+class _CornMultiYearContinue(CornNew):
 
     def __init__(self, START_YEAR, END_YEAR, delta, n_actions, maxN):
         self.ROTATION_SIZE = END_YEAR - START_YEAR + 1
         super(CornNew, self).__init__(SIMULATION_START_YEAR=START_YEAR,
                                       SIMULATION_END_YEAR=END_YEAR,
-                                     ROTATION_SIZE=self.ROTATION_SIZE,
-                                     USE_REINITIALIZATION=0,
-                                     ADJUSTED_YIELDS=0,
-                                     HOURLY_INFILTRATION=1,
-                                     AUTOMATIC_NITROGEN=0,
-                                     AUTOMATIC_PHOSPHORUS=0,
-                                     AUTOMATIC_SULFUR=0,
-                                     DAILY_WEATHER_OUT=0,
-                                     DAILY_CROP_OUT=1,
-                                     DAILY_RESIDUE_OUT=0,
-                                     DAILY_WATER_OUT=0,
-                                     DAILY_NITROGEN_OUT=0,
-                                     DAILY_SOIL_CARBON_OUT=0,
-                                     DAILY_SOIL_LYR_CN_OUT=0,
-                                     ANNUAL_SOIL_OUT=0,
-                                     ANNUAL_PROFILE_OUT=0,
-                                     ANNUAL_NFLUX_OUT=0,
-                                     CROP_FILE='GenericCrops.crop',
-                                     OPERATION_FILE='ContinuousCorn.operation',
-                                     SOIL_FILE='GenericHagerstown.soil',
-                                     WEATHER_FILE='RockSprings.weather',
-                                     REINIT_FILE='N / A',
-                                     delta=delta)
+                                      ROTATION_SIZE=self.ROTATION_SIZE,
+                                      USE_REINITIALIZATION=0,
+                                      ADJUSTED_YIELDS=0,
+                                      HOURLY_INFILTRATION=1,
+                                      AUTOMATIC_NITROGEN=0,
+                                      AUTOMATIC_PHOSPHORUS=0,
+                                      AUTOMATIC_SULFUR=0,
+                                      DAILY_WEATHER_OUT=0,
+                                      DAILY_CROP_OUT=1,
+                                      DAILY_RESIDUE_OUT=0,
+                                      DAILY_WATER_OUT=0,
+                                      DAILY_NITROGEN_OUT=0,
+                                      DAILY_SOIL_CARBON_OUT=0,
+                                      DAILY_SOIL_LYR_CN_OUT=0,
+                                      ANNUAL_SOIL_OUT=0,
+                                      ANNUAL_PROFILE_OUT=0,
+                                      ANNUAL_NFLUX_OUT=0,
+                                      CROP_FILE='GenericCrops.crop',
+                                      OPERATION_FILE='ContinuousCorn.operation',
+                                      SOIL_FILE='GenericHagerstown.soil',
+                                      WEATHER_FILE='RockSprings.weather',
+                                      REINIT_FILE='N / A',
+                                      delta=delta)
         self._post_init_setup(n_actions, maxN)
 
     def _create_operation_file(self):
         """Create operation file by copying the base one."""
-        super(CornMultiYearContinue, self)._create_operation_file()
+        super(_CornMultiYearContinue, self)._create_operation_file()
         operations = [key for key in self.op_manager.op_dict.keys() if key[2] != 'FIXED_FERTILIZATION']
         for i in range(self.ROTATION_SIZE-1):
             for op in operations:
@@ -64,11 +52,11 @@ class CornMultiYearContinue(CornNew):
         #TODO: write other operations only if not available. Print warining in this case.
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, dict]:
-        obs, r, done, _ = super(CornMultiYearContinue, self).step(action)
+        obs, r, done, _ = super(_CornMultiYearContinue, self).step(action)
         return obs, r, done, self.date
 
 
-class CornMultiYear(CornMultiYearContinue):
+class CornMultiYear(_CornMultiYearContinue):
 
     def _create_control_file(self):
         super(CornMultiYear, self)._create_control_file()

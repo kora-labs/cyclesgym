@@ -1,4 +1,4 @@
-from cyclesgym.envs.corn_multiyear import CornMultiYearContinue, CornMultiYear
+from cyclesgym.envs.corn_multiyear import _CornMultiYearContinue, CornMultiYear
 from cyclesgym.utils import compare_env, maximum_absolute_percentage_error
 import unittest
 
@@ -12,9 +12,9 @@ class TestCornEnv(unittest.TestCase):
         self.START_YEAR = 1980
         self.END_YEAR = 1983
 
-        self.env_cont = CornMultiYearContinue(self.START_YEAR, self.END_YEAR, delta=delta,
-                                              n_actions=n_actions,
-                                              maxN=maxN)
+        self.env_cont = _CornMultiYearContinue(self.START_YEAR, self.END_YEAR, delta=delta,
+                                               n_actions=n_actions,
+                                               maxN=maxN)
 
         self.env_impr = CornMultiYear(self.START_YEAR, self.END_YEAR, delta=delta,
                                       n_actions=n_actions,
@@ -27,3 +27,4 @@ class TestCornEnv(unittest.TestCase):
 
         max_ape = maximum_absolute_percentage_error(obs_cont, obs_impr)
         print(f'Maximum percentage error: {max_ape} %')
+        self.assertLess(max_ape, 1, f'Maximum percentage error: {max_ape} % is less then the threshold 1')
