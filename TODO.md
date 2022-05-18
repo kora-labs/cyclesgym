@@ -4,16 +4,17 @@ prepare this env for submission.
 
 ## Basic
  - Abstract classes for observer, rewarder, implementer
- - Finish corn environment
- - Test new environment
+ - Finish corn environment: MATTEO
+ - Test new environment: MATTEO
  - Register some environments
  - Basic RL+W&B training script?
  - Improve installation script 
     * Remove imitation library
     * Should we allow for managers installation only?
     * How about installation of stable_baselines3?
- - Action spaces: irrigation, tillage, planting
- - Multi-year
+ - Action spaces: irrigation, tillage, planting: LUCA
+ - Multi-year (maybe implement nitrogen leakege 
+observer and rewarder): SCOTT
 
 ## Extensions
  - Rewarder: Match cost and reward to year
