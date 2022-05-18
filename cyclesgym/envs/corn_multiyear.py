@@ -1,10 +1,14 @@
 from datetime import timedelta
+
+import pandas as pd
+
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.corn_old import CornEnvOld
 from cyclesgym.envs.observers import *
 from cyclesgym.envs.rewarders import *
 from cyclesgym.envs.implementers import *
 from cyclesgym.envs.corn import CornNew
+from cyclesgym.utils import plot_two_environments
 from typing import Tuple
 import shutil
 import numpy as np
@@ -13,19 +17,16 @@ from gym import spaces
 
 from cyclesgym.managers import *
 
-__all__ = ['CornMultiYearContinue']
-
-START_YEAR = 1980
-END_YEAR = 1983
-ROTATION_SIZE = END_YEAR - START_YEAR + 1
+__all__ = ['CornMultiYearContinue', 'CornMultiYear']
 
 
 class CornMultiYearContinue(CornNew):
 
-    def __init__(self, delta, n_actions, maxN):
+    def __init__(self, START_YEAR, END_YEAR, delta, n_actions, maxN):
+        self.ROTATION_SIZE = END_YEAR - START_YEAR + 1
         super(CornNew, self).__init__(SIMULATION_START_YEAR=START_YEAR,
                                       SIMULATION_END_YEAR=END_YEAR,
-                                     ROTATION_SIZE=ROTATION_SIZE,
+                                     ROTATION_SIZE=self.ROTATION_SIZE,
                                      USE_REINITIALIZATION=0,
                                      ADJUSTED_YIELDS=0,
                                      HOURLY_INFILTRATION=1,
@@ -54,7 +55,7 @@ class CornMultiYearContinue(CornNew):
         """Create operation file by copying the base one."""
         super(CornMultiYearContinue, self)._create_operation_file()
         operations = [key for key in self.op_manager.op_dict.keys() if key[2] != 'FIXED_FERTILIZATION']
-        for i in range(ROTATION_SIZE-1):
+        for i in range(self.ROTATION_SIZE-1):
             for op in operations:
                 copied_op = (i+2,) + op[1:]
                 self.op_manager.op_dict[copied_op] = self.op_manager.op_dict[op]
@@ -62,60 +63,83 @@ class CornMultiYearContinue(CornNew):
         self.op_manager.save(self.op_file)
         #TODO: write other operations only if not available. Print warining in this case.
 
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, dict]:
+        obs, r, done, _ = super(CornMultiYearContinue, self).step(action)
+        return obs, r, done, self.date
 
-class CornMultiYearSingleSteps(CornMultiYearContinue):
+
+class CornMultiYear(CornMultiYearContinue):
 
     def _create_control_file(self):
-        super(CornMultiYearSingleSteps, self)._create_control_file()
-        self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
+        super(CornMultiYear, self)._create_control_file()
+        self.reinit_year = int((self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
+                                + self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])/2)
+        self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.reinit_year
         self.ctrl_manager.save(self.ctrl_file)
 
-    def _update_control_file(self):
-        self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1
-        self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] + 1
-        self.ctrl_manager.ctrl_dict['USE_REINITIALIZATION'] = 1
+    def _update_reinit_file(self):
         new_reinit = self.input_dir.name.joinpath('reinit.dat')
-        self.ctrl_manager.ctrl_dict['REINIT_FILE'] = pathlib.Path(self.input_dir.name.stem).joinpath('reinit.dat')
         shutil.copy(self._get_output_dir().joinpath('reinit.dat'), new_reinit)
 
         lines = []
         with open(new_reinit, 'r') as f:
             for i, line in enumerate(f.readlines()):
-                if i == 0:
-                    line = line.split()
-                    line[1] = str(int(line[1]) + 1)
-                    line[3] = '1'
-                    line = ('    ').join(line) + '\n'
+                line_splitted = line.split()
+                if len(line_splitted) > 0:
+                    if line_splitted[1].isnumeric():
+                        if int(line_splitted[1]) == self.reinit_year:
+                            indx = i
+                            line = line_splitted
+                            line[1] = str(int(line[1]) + 1)
+                            line[3] = '1'
+                            line = line[0] + '    ' + line[1] + '    ' + line[2] + '     ' + line[3] + '\n'
                 lines.append(line)
 
         with open(new_reinit, 'w') as f:
-            for line in lines:
-                f.write(line)
+            for i, line in enumerate(lines):
+                if i >= indx:
+                    f.write(line)
 
+    def _update_control_file(self):
+        self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] = self.reinit_year + 1
+        self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        self.ctrl_manager.ctrl_dict['USE_REINITIALIZATION'] = 1
+        self.ctrl_manager.ctrl_dict['REINIT_FILE'] = pathlib.Path(self.input_dir.name.stem).joinpath('reinit.dat')
         self.ctrl_manager.save(self.ctrl_file)
 
-    def _check_is_last_step_year(self):
-        return (self.date + timedelta(days=self.delta)).year != self.date.year
+    def _update_operation_file(self):
+        reference_year = self.reinit_year-self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1
+        for key in list(self.op_manager.op_dict.keys()):
+            operation = self.op_manager.op_dict.pop(key)
+            if key[0] > reference_year:
+                self.op_manager.op_dict[(key[0] - reference_year, *key[1:])] = operation
+
+        self.op_manager.save(self.op_file)
+
+    def _check_is_mid_year(self):
+        year_of_next_step = (self.date + timedelta(days=self.delta)).year
+        return (year_of_next_step > self.reinit_year and self.date.year == self.reinit_year)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, dict]:
         N_mass = self._action2mass(action)
         rerun_cycles = self.implementer.implement_action(
             date=self.date, mass=N_mass)
 
-        reinit = self._check_is_last_step_year()
+        reinit = self._check_is_mid_year()
         doy = None
         if reinit:
             doy = 365
 
-        if rerun_cycles:
+        if rerun_cycles or reinit:
             self._call_cycles(debug=False, reinit=reinit, doy=doy)
 
         # Advance time
-        year = self.date.year
         self.date += timedelta(days=self.delta)
-        self.changed_year = self.date.year != year
-        if self.changed_year:
+        if reinit:
             self._update_control_file()
+            self._update_reinit_file()
+            self._update_operation_file()
+            self.implementer.start_year = self.reinit_year + 1
 
         self.season_manager.update_file(self.season_file)
         # Compute reward
@@ -124,47 +148,12 @@ class CornMultiYearSingleSteps(CornMultiYearContinue):
 
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
 
-        if self.changed_year and not done:
+        if reinit and not done:
             self._call_cycles(debug=False)
 
         # Compute state
         obs = self.observer.compute_obs(self.date, N=N_mass)
 
         # Compute
+        return obs, r, done, self.date
 
-        return obs, r, done, {}
-
-
-def compare_env():
-    import time
-    delta = 7
-    n_actions = 7
-    maxN=120
-    old_env = CornMultiYearContinue(delta=delta,
-                                    n_actions=n_actions,
-                                    maxN=maxN)
-
-    env = CornMultiYearSingleSteps(delta=delta,
-                                   n_actions=n_actions,
-                                   maxN=maxN)
-    s_old = old_env.reset()
-    s = env.reset()
-    print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-
-    t = time.time()
-    i = 0
-    while True:
-        a = env.action_space.sample()
-        s_old, r_old, done_old, info_old = old_env.step(a)
-        s, r, done, info = env.step(a)
-        print(i)
-        print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-        if done:
-            break
-        i = i+1
-    print(f'Time elapsed:\t{time.time() - t}')
-
-
-if __name__ == '__main__':
-    # deploy_env(old=False)
-    compare_env()
