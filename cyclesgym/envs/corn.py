@@ -42,24 +42,21 @@ class CornNew(CyclesEnv):
                          WEATHER_FILE='RockSprings.weather',
                          REINIT_FILE='N / A',
                          delta=delta)
-        self._post_init_setup(n_actions, maxN)
+        self._post_init_setup()
+        self._generate_observation_space()
+        self._generate_action_space(n_actions, maxN)
 
-    def _post_init_setup(self, n_actions, maxN):
-        self.weather_manager = None
-        self.crop_output_file = None
-        self.crop_output_manager = None
-        self.season_file = None
-        self.season_manager = None
+    def _generate_action_space(self, n_actions, maxN):
+        self.action_space = spaces.Discrete(n_actions, )
+        self.maxN = maxN
+        self.n_actions = n_actions
 
-        # Now we can write action and obs space
+    def _generate_observation_space(self):
         self.observation_space = spaces.Box(
             low=WeatherCropDoyNObserver.lower_bound,
             high=WeatherCropDoyNObserver.upper_bound,
             shape=WeatherCropDoyNObserver.lower_bound.shape,
             dtype=np.float32)
-        self.action_space = spaces.Discrete(n_actions, )
-        self.maxN = maxN
-        self.n_actions = n_actions
 
     def _init_input_managers(self):
         self.weather_manager = WeatherManager(self.weather_input_file)
@@ -87,7 +84,7 @@ class CornNew(CyclesEnv):
     def _init_rewarder(self, *args, **kwargs):
         self.rewarder = CornNProfitabilityRewarder(self.season_manager)
 
-    def _init_implementer(self, * args, **kwargs):
+    def _init_implementer(self, *args, **kwargs):
         self.implementer = FixedRateNFertilizer(
             operation_manager=self.op_manager,
             operation_fname=self.op_file,

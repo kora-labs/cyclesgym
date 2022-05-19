@@ -7,6 +7,7 @@ from cyclesgym.managers.utils import date_to_ydoy, ydoy_to_date
 
 __all__ = ['CropManager']
 
+
 class CropManager(Manager):
     def __init__(self, fname=None):
         self.crop_state = pd.DataFrame()

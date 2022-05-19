@@ -119,6 +119,13 @@ class CyclesEnv(gym.Env):
         self.output_managers = []
         self.output_files = []
 
+    def _post_init_setup(self):
+        self.weather_manager = None
+        self.crop_output_file = None
+        self.crop_output_manager = None
+        self.season_file = None
+        self.season_manager = None
+
     def _create_io_dirs(self):
         """
         Create temporary directory for input and output files.

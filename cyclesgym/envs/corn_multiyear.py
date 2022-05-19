@@ -37,7 +37,9 @@ class _CornMultiYearContinue(CornNew):
                                       WEATHER_FILE='RockSprings.weather',
                                       REINIT_FILE='N / A',
                                       delta=delta)
-        self._post_init_setup(n_actions, maxN)
+        self._post_init_setup()
+        self._generate_observation_space()
+        self._generate_action_space(n_actions, maxN)
 
     def _create_operation_file(self):
         """Create operation file by copying the base one."""

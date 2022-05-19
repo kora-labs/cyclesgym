@@ -33,16 +33,20 @@ class CornNProfitabilityRewarder(object):
         # Did we harvest between this and previous time step?
         df = self.season_manager.season_df
         harverst_df = df.loc[df['YEAR'] == y_prev]
-        harverst_doy = harverst_df.iloc[0]['DOY']
-        harvest_date = ydoy2date(y_prev, harverst_doy)
 
-        if previous_date <= harvest_date <= date:
-            # Compute harvest profit
-            dollars_per_tonne = self.dollars_per_bushel[y_prev] * \
-                                BUSHEL_PER_TONNE
-            harvest = harverst_df['GRAIN YIELD']  # Metric tonne per hectar
-            harvest_dollars_per_hectare = harvest * dollars_per_tonne
-            return harvest_dollars_per_hectare
+        if not harverst_df.empty:
+            harverst_doy = harverst_df.iloc[0]['DOY']
+            harvest_date = ydoy2date(y_prev, harverst_doy)
+
+            if previous_date <= harvest_date <= date:
+                # Compute harvest profit
+                dollars_per_tonne = self.dollars_per_bushel[y_prev] * \
+                                    BUSHEL_PER_TONNE
+                harvest = harverst_df['GRAIN YIELD']  # Metric tonne per hectar
+                harvest_dollars_per_hectare = harvest * dollars_per_tonne
+                return harvest_dollars_per_hectare
+            else:
+                return 0
         else:
             return 0
 
