@@ -1,0 +1,27 @@
+PLANTING
+YEAR                1
+DOY                 115
+END_DOY             115
+MAX_SMC             1.0
+MIN_SMC             0.0
+MIN_SOIL_TEMP       0.0
+CROP                CornSilageRM.90
+USE_AUTO_IRR        0
+USE_AUTO_FERT       0
+FRACTION            1.0
+CLIPPING_START      1
+CLIPPING_END        366
+
+PLANTING
+YEAR                2
+DOY                 120
+END_DOY             120
+MAX_SMC             1.0
+MIN_SMC             0.0
+MIN_SOIL_TEMP       0.0
+CROP                SoybeanMG.5
+USE_AUTO_IRR        0
+USE_AUTO_FERT       0
+FRACTION            1.0
+CLIPPING_START      1
+CLIPPING_END        366

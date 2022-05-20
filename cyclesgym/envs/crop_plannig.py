@@ -2,18 +2,20 @@ from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.observers import WheatherObserver, compound_observer, CropObserver
 from cyclesgym.envs.rewarders import CornNProfitabilityRewarder
 from cyclesgym.envs.implementers import RotationPlanter
-from cyclesgym.managers import WeatherManager, CropManager, SeasonManager
+from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager
 from gym import spaces
 from typing import Tuple
 import numpy as np
 from datetime import date
+import os
+from pathlib import Path
 
 
 class CropPlannig(CyclesEnv):
-    def __init__(self, rotation_crops):
-        super().__init__(SIMULATION_START_YEAR=1980,
-                         SIMULATION_END_YEAR=1990,
-                         ROTATION_SIZE=10,
+    def __init__(self, start_year, end_year, rotation_crops):
+        super().__init__(SIMULATION_START_YEAR=start_year,
+                         SIMULATION_END_YEAR=end_year,
+                         ROTATION_SIZE=end_year-start_year,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
                          HOURLY_INFILTRATION=1,
@@ -32,6 +34,7 @@ class CropPlannig(CyclesEnv):
                          ANNUAL_NFLUX_OUT=0,
                          CROP_FILE='GenericCrops.crop',
                          OPERATION_FILE='CornSilageSoyWheat.operation',
+                         #TODO: right now the operation file is totally ignored
                          SOIL_FILE='GenericHagerstown.soil',
                          WEATHER_FILE='RockSprings.weather',
                          REINIT_FILE='N / A',
@@ -72,6 +75,11 @@ class CropPlannig(CyclesEnv):
     def _init_output_managers(self):
         self.crop_output_file = [self._get_output_dir().joinpath(crop + '.dat') for crop in self.rotation_crops]
         self.season_file = self._get_output_dir().joinpath('season.dat')
+
+        for file in self.crop_output_file:
+            if not os.path.exists(file):
+                with open(file, 'w'): pass
+
         self.crop_output_manager = [CropManager(file) for file in self.crop_output_file]
         self.season_manager = SeasonManager(self.season_file)
 
@@ -112,6 +120,13 @@ class CropPlannig(CyclesEnv):
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
 
         return obs, r, done, {}
+
+    def _create_operation_file(self):
+        self.op_file = Path(self.input_dir.name).joinpath(
+            'operation.operation')
+        open(self.op_file, 'w').close()
+        self.op_manager = OperationManager(self.op_file)
+        self.op_base_manager = OperationManager(self.op_file)
 
     def reset(self) -> np.ndarray:
         # Set up dirs and files and run first simulation

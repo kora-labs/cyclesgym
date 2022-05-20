@@ -426,7 +426,7 @@ class RotationPlanter(Planter):
     def convert_action_to_dict(self, crop_categorical, doy, end_doy, max_smc):
         end_doy = int((doy+(1-doy)*end_doy) * 365)
         doy = int(doy * 365)
-        max_smc = max_smc[0]
+        max_smc = float(max_smc)
         operation_det = {'DOY': doy,
                          'CROP': self.affected_crops[crop_categorical],
                          'END_DOY': end_doy,
