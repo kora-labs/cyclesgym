@@ -2,35 +2,41 @@ from cyclesgym.managers.common import InputFileManager
 from copy import copy, deepcopy
 
 
-__all__ = ['ControlManager']
+__all__ = ['ReinitManager']
+
+do_not_reinit = -999
+
+FIRST_KEYS = ['STANRESIDUEC',
+              'FLATRESIDUEC',
+              'STANRESIDUEN',
+              'FLATRESIDUEN',
+              'MANURESURFACEC',
+              'MANURESURFACEN',
+              'STANRESIDUEWATER',
+              'FLATRESIDUEWATER',
+              'INFILTRATION']
+
+SECOND_KEYS = ['LAYER',
+               'SMC',
+               'NO3',
+               'NH4',
+               'SOC',
+               'SON',
+               'MBC',
+               'MBN',
+               'RESABGDC',
+               'RESRTC',
+               'RESRZC',
+               'RESIDUEABGDN',
+               'RESIDUERTN',
+               'RESIDUERZN',
+               'MANUREC',
+               'MANUREN',
+               'SATURATION']
 
 
-class ControlManager(InputFileManager):
-    _keys = [
-        'SIMULATION_START_YEAR',
-        'SIMULATION_END_YEAR',
-        'ROTATION_SIZE',
-        'USE_REINITIALIZATION',
-        'ADJUSTED_YIELDS',
-        'HOURLY_INFILTRATION',
-        'AUTOMATIC_NITROGEN',
-        'AUTOMATIC_PHOSPHORUS',
-        'AUTOMATIC_SULFUR',
-        'DAILY_WEATHER_OUT',
-        'DAILY_CROP_OUT',
-        'DAILY_RESIDUE_OUT',
-        'DAILY_WATER_OUT',
-        'DAILY_NITROGEN_OUT',
-        'DAILY_SOIL_CARBON_OUT',
-        'DAILY_SOIL_LYR_CN_OUT',
-        'ANNUAL_SOIL_OUT',
-        'ANNUAL_PROFILE_OUT',
-        'ANNUAL_NFLUX_OUT',
-        'CROP_FILE',
-        'OPERATION_FILE',
-        'SOIL_FILE',
-        'WEATHER_FILE',
-        'REINIT_FILE']
+class ReinitManager(InputFileManager):
+    _keys = ['']
 
     _non_numeric = _keys[-5:]
 

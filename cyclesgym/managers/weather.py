@@ -14,23 +14,23 @@ class WeatherManager(InputFileManager):
         self.mutables = pd.DataFrame
         super().__init__(fname)
 
-    def _parse(self):
-        self._parse_immutable()
-        self._parse_mutables()
+    def _parse(self, fname):
+        self._parse_immutable(fname)
+        self._parse_mutables(fname)
 
-    def _parse_immutable(self):
+    def _parse_immutable(self, fname):
         immutables = {}
-        with open(self.fname, 'r') as f:
+        with open(fname, 'r') as f:
             for _ in range(3):
                 line = next(f)
                 immutables.update({line.split()[0]: [float(line.split()[1])]})
             self.immutables = pd.DataFrame(immutables)
 
-    def _parse_mutables(self):
-        n = num_lines(self.fname)
+    def _parse_mutables(self, fname):
+        n = num_lines(fname)
         values = np.zeros((n-5, 9))
 
-        with open(self.fname, 'r') as f:
+        with open(fname, 'r') as f:
             for i, l in enumerate(f.readlines()):
                 if i < 3 or i == 4:
                     pass

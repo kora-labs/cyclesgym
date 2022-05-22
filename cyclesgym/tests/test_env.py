@@ -3,7 +3,7 @@ import unittest
 import subprocess
 import shutil
 import numpy as np
-from cyclesgym.envs.common import CornEnv
+from cyclesgym.envs import CornEnv
 from cyclesgym.managers import *
 
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
@@ -198,7 +198,7 @@ class TestCornEnv(unittest.TestCase):
         assert env.op_manager.op_dict == operations
 
         # Check file is equal
-        new_manager = OperationManager(env.op_manager.fname)
+        new_manager = OperationManager(env.current_op_manager_file)
         assert new_manager.op_dict == env.op_manager.op_dict
 
         # Case without collision
@@ -212,7 +212,7 @@ class TestCornEnv(unittest.TestCase):
         assert env.op_manager.op_dict == operations
 
         # Check file is equal
-        new_manager = OperationManager(env.op_manager.fname)
+        new_manager = OperationManager(env.current_op_manager_file)
         assert new_manager.op_dict == env.op_manager.op_dict
 
 

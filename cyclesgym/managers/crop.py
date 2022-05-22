@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import os
 
 from cyclesgym.managers.common import Manager
 from cyclesgym.managers.utils import date_to_ydoy, ydoy_to_date
 
 __all__ = ['CropManager']
+
 
 class CropManager(Manager):
     def __init__(self, fname=None):
@@ -21,23 +23,24 @@ class CropManager(Manager):
     def _valid_output_file(self, fname):
         return super(CropManager, self)._valid_output_file(fname) and fname.suffix == '.dat'
 
-    def _parse(self):
-        if self.fname is not None:
-            # Read and remove unit of measurement row
-            df = pd.read_csv(self.fname, sep='\t').drop(index=0)
-            df.reset_index(drop=True, inplace=True)
+    def _parse(self, fname):
+        if fname is not None:
+            if os.path.isfile(fname) and os.path.getsize(fname) > 0:
+                # Read and remove unit of measurement row
+                df = pd.read_csv(fname, sep='\t').drop(index=0)
+                df.reset_index(drop=True, inplace=True)
 
-            # Remove empty spaces and cast as floats
-            df.columns = df.columns.str.strip(' ')
-            df['CROP'] = df['CROP'].str.strip(' ')
-            df['STAGE'] = df['STAGE'].str.strip(' ')
-            numeric_cols = df.columns[3:]
-            df[numeric_cols] = df[numeric_cols].astype(float)
+                # Remove empty spaces and cast as floats
+                df.columns = df.columns.str.strip(' ')
+                df['CROP'] = df['CROP'].str.strip(' ')
+                df['STAGE'] = df['STAGE'].str.strip(' ')
+                numeric_cols = df.columns[3:]
+                df[numeric_cols] = df[numeric_cols].astype(float)
 
-            # Convert date to be consistent with weather
-            date_to_ydoy(df, old_col_name='DATE',
-                         new_col_names=['YEAR', 'DOY'], inplace=True)
-            self.crop_state = df
+                # Convert date to be consistent with weather
+                date_to_ydoy(df, old_col_name='DATE',
+                             new_col_names=['YEAR', 'DOY'], inplace=True)
+                self.crop_state = df
 
     def _to_str(self):
         # Not necessary since this is not an input file but I had already implemented it
@@ -47,7 +50,10 @@ class CropManager(Manager):
         return self._to_str()
 
     def get_day(self, year, doy):
-        return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]
+        if 'YEAR' in  self.crop_state.columns and 'DOY' in self.crop_state.columns:
+            return self.crop_state.loc[(self.crop_state['YEAR'] == year) & (self.crop_state['DOY'] == doy)]
+        else:
+            return pd.DataFrame()
 
     def plot(self, columns):
         columns = np.atleast_2d(columns)

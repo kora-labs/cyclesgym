@@ -4,7 +4,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 from pathlib import Path
 from imitation.algorithms.bc import BC
-from cyclesgym.envs.common import PartialObsCornEnv
+from cyclesgym.envs import PartialObsCornEnv
 from cyclesgym.dummy_policies import OpenLoopPolicy
 import shutil
 import torch as th
