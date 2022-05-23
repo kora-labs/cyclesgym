@@ -1,8 +1,8 @@
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.observers import WheatherObserver, compound_observer, CropObserver
+from cyclesgym.envs.observers import WheatherObserver, compound_observer, CropObserver, SoilNObserver
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
 from cyclesgym.envs.implementers import RotationPlanter
-from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager
+from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager
 from gym import spaces
 from typing import Tuple
 import numpy as np
@@ -26,10 +26,10 @@ class CropPlanning(CyclesEnv):
                          DAILY_CROP_OUT=1,
                          DAILY_RESIDUE_OUT=0,
                          DAILY_WATER_OUT=0,
-                         DAILY_NITROGEN_OUT=0,
+                         DAILY_NITROGEN_OUT=1,
                          DAILY_SOIL_CARBON_OUT=0,
                          DAILY_SOIL_LYR_CN_OUT=0,
-                         ANNUAL_SOIL_OUT=1,
+                         ANNUAL_SOIL_OUT=0,
                          ANNUAL_PROFILE_OUT=0,
                          ANNUAL_NFLUX_OUT=0,
                          CROP_FILE='GenericCrops.crop',
@@ -52,11 +52,10 @@ class CropPlanning(CyclesEnv):
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
-            high=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
-            shape=WeatherCropObserver.lower_bound.shape,
+            low=np.array(SoilNObserver.lower_bound, dtype=np.float32),
+            high=np.array(SoilNObserver.lower_bound, dtype=np.float32),
+            shape=SoilNObserver.lower_bound.shape,
             dtype=np.float32)
-        #TODO: write observation of soil data
 
     def _init_input_managers(self):
         #TODO: in common with Corn environment. Should be implemented in and abstract parent class
@@ -75,6 +74,7 @@ class CropPlanning(CyclesEnv):
     def _init_output_managers(self):
         self.crop_output_file = [self._get_output_dir().joinpath(crop + '.dat') for crop in self.rotation_crops]
         self.season_file = self._get_output_dir().joinpath('season.dat')
+        self.soil_n_file = self._get_output_dir().joinpath('N.dat')
 
         for file in self.crop_output_file:
             if not os.path.exists(file):
@@ -82,20 +82,18 @@ class CropPlanning(CyclesEnv):
 
         self.crop_output_manager = [CropManager(file) for file in self.crop_output_file]
         self.season_manager = SeasonManager(self.season_file)
+        self.soil_n_manager = SoilNManager(self.soil_n_file)
 
         self.output_managers = [*self.crop_output_manager,
-                                self.season_manager]
+                                self.season_manager,
+                                self.soil_n_manager]
         self.output_files = [*self.crop_output_file,
-                             self.season_file]
+                             self.season_file,
+                             self.soil_n_file]
 
     def _init_observer(self, *args, **kwargs):
-        #TODO: add obersavtion of soil
-        obs_list = [WheatherObserver(weather_manager=self.weather_manager,
-                                    end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])]
-        obs_list = obs_list + [CropObserver(crop_manager=crop_man,
-                                            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
-                               for crop_man in self.crop_output_manager]
-        self.observer = compound_observer(obs_list)
+        self.observer = SoilNObserver(soil_n_manager=self.soil_n_manager,
+                                      end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
 
     def _init_rewarder(self, *args, **kwargs):
         self.rewarder = compound_rewarder([CropRewarder(self.season_manager, name)

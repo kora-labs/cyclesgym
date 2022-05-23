@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from cyclesgym.envs.utils import date2ydoy
 import datetime
-from cyclesgym.managers import WeatherManager, CropManager
+from cyclesgym.managers import WeatherManager, CropManager, SoilNManager
 
 __all__ = ['WeatherCropObserver', 'WeatherCropDoyNObserver', 'WheatherObserver', 'CropObserver', 'compound_observer']
 
@@ -67,6 +67,7 @@ class CropObserver(object):
         return obs.to_numpy(dtype=float)
 
 
+# TODO: to be written as compounded Wheather and Crop observer
 class WeatherCropObserver(object):
     Nobs = 24
     lower_bound = np.full((Nobs,), -np.inf)
@@ -100,6 +101,7 @@ class WeatherCropObserver(object):
         return obs.to_numpy(dtype=float)
 
 
+# TODO: to be written as compounded Whether Crop and DoyN
 class WeatherCropDoyNObserver(WeatherCropObserver):
     Nobs = 26
     lower_bound = np.full((Nobs,), -np.inf)
@@ -127,6 +129,37 @@ class WeatherCropDoyNObserver(WeatherCropObserver):
 
     def reset(self):
         self.N_to_date = 0
+
+
+# TODO: write generic daily observer, that is a parent of SoilN, wheather, Crop
+class SoilNObserver(CropObserver):
+    Nobs = 15
+    lower_bound = np.full((Nobs,), -np.inf)
+    upper_bound = np.full((Nobs,), np.inf)
+
+    def __init__(self,
+                 soil_n_manager: SoilNManager,
+                 end_year: int):
+        self.soil_n_manager = soil_n_manager
+        self.obs_names = None
+        self.end_year = end_year
+
+    def compute_obs(self,
+                    date: datetime.date):
+        # Make sure we did not go into not simulated year when advancing time
+        date = min([date,
+                    datetime.date(year=self.end_year, month=12, day=31)])
+        year, doy = date2ydoy(date)
+
+        soil_n_data = self.soil_n_manager.get_day(year, doy)
+        if not soil_n_data.empty:
+            soil_n_data = soil_n_data.iloc[0, 2:]
+
+        obs = soil_n_data
+        if self.obs_names is None:
+            self.obs_names = list(obs.index)
+
+        return obs.to_numpy(dtype=float)
 
 
 def compound_observer(obs_list: list):

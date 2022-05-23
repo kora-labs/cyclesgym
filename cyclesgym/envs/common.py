@@ -228,6 +228,7 @@ class CyclesEnv(gym.Env):
         """
         Update the output file managers based on the corresponding file paths.
         """
+        # TODO: give a warning if self.output_managers, self.output_files not of same lenght
         for manager, file in zip(self.output_managers, self.output_files):
             manager.update_file(file)
 
