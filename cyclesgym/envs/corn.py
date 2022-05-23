@@ -16,7 +16,13 @@ __all__ = ['CornNew']
 
 
 class CornNew(CyclesEnv):
-    def __init__(self, delta, n_actions, maxN):
+    def __init__(self, delta,
+                 n_actions,
+                 maxN,
+                 operation_file='ContinuousCorn.operation',
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather'
+                 ):
         super().__init__(SIMULATION_START_YEAR=1980,
                          SIMULATION_END_YEAR=1980,
                          ROTATION_SIZE=1,
@@ -37,9 +43,9 @@ class CornNew(CyclesEnv):
                          ANNUAL_PROFILE_OUT=0,
                          ANNUAL_NFLUX_OUT=0,
                          CROP_FILE='GenericCrops.crop',
-                         OPERATION_FILE='ContinuousCorn.operation',
-                         SOIL_FILE='GenericHagerstown.soil',
-                         WEATHER_FILE='RockSprings.weather',
+                         OPERATION_FILE=operation_file,
+                         SOIL_FILE=soil_file,
+                         WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=delta)
         self._post_init_setup()
