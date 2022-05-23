@@ -2,7 +2,7 @@ from datetime import timedelta
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.corn_old import CornEnvOld
 from cyclesgym.envs.observers import *
-from cyclesgym.envs.rewarders import *
+from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, NProfitabilityRewarder
 from cyclesgym.envs.implementers import *
 
 from typing import Tuple
@@ -82,7 +82,8 @@ class CornNew(CyclesEnv):
         )
 
     def _init_rewarder(self, *args, **kwargs):
-        self.rewarder = CornNProfitabilityRewarder(self.season_manager)
+        self.rewarder = compound_rewarder([CropRewarder(self.season_manager, 'CornRM.90'),
+                                           NProfitabilityRewarder()])
 
     def _init_implementer(self, *args, **kwargs):
         self.implementer = FixedRateNFertilizer(
@@ -96,9 +97,9 @@ class CornNew(CyclesEnv):
         return self.maxN * action / (self.n_actions - 1)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, dict]:
-        N_mass = self._action2mass(action)
+        action = self._action2mass(action)
         rerun_cycles = self.implementer.implement_action(
-            date=self.date, mass=N_mass)
+            date=self.date, mass=action)
 
         if rerun_cycles:
             self._call_cycles(debug=False)
@@ -107,11 +108,10 @@ class CornNew(CyclesEnv):
         self.date += timedelta(days=self.delta)
 
         # Compute reward
-        r = self.rewarder.compute_reward(
-            N_mass, date=self.date, delta=self.delta)
+        r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
         # Compute state
-        obs = self.observer.compute_obs(self.date, N=N_mass)
+        obs = self.observer.compute_obs(self.date, N=action)
 
         # Compute
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']

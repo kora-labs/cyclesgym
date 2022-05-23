@@ -136,7 +136,7 @@ def compound_observer(obs_list: list):
             self.obs_list = obs_list
 
         def compute_obs(self, date: datetime.date):
-            obs = [o.compute_obs(date).squeeze() for o in obs_list]
+            obs = [o.compute_obs(date).squeeze() for o in self.obs_list]
             obs = [o for o in obs if o.size > 0]
             self.obs_names = [name for o in obs_list for name in o.obs_names]
 

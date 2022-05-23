@@ -1,6 +1,6 @@
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.observers import WheatherObserver, compound_observer, CropObserver
-from cyclesgym.envs.rewarders import CornNProfitabilityRewarder
+from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
 from cyclesgym.envs.implementers import RotationPlanter
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager
 from gym import spaces
@@ -98,8 +98,8 @@ class CropPlanning(CyclesEnv):
         self.observer = compound_observer(obs_list)
 
     def _init_rewarder(self, *args, **kwargs):
-        # TODO: add rewarder for every crop
-        self.rewarder = CornNProfitabilityRewarder(self.season_manager)
+        self.rewarder = compound_rewarder([CropRewarder(self.season_manager, name)
+                                           for name in self.rotation_crops])
 
     def step(self, action) -> Tuple[np.ndarray, float, bool, dict]:
         rerun_cycles = self.implementer.implement_action(self.date, *action)
@@ -111,7 +111,7 @@ class CropPlanning(CyclesEnv):
         self.date = date(self.date.year + 1, self.date.month, self.date.day)
 
         # Compute reward
-        r = self.rewarder.compute_reward(Nkg_per_heactare=0, date=self.date, delta=self.delta)
+        r = self.rewarder.compute_reward(date=self.date, delta=self.delta)
 
         # Compute state
         obs = self.observer.compute_obs(self.date)
@@ -122,6 +122,7 @@ class CropPlanning(CyclesEnv):
         return obs, r, done, {}
 
     def _create_operation_file(self):
+        # deleting all the content of the operation file found.
         self.op_file = Path(self.input_dir.name).joinpath(
             'operation.operation')
         open(self.op_file, 'w').close()
