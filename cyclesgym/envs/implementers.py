@@ -174,7 +174,6 @@ class Fertilizer(Implementer):
         fertilization event happening between t and t + delta that we could not
         overwrite.
         """
-        doy = 1
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'FIXED_FERTILIZATION':
                 start_year = op_k[0]

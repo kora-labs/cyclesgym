@@ -46,7 +46,6 @@ class InputFileManager(Manager):
         if not self._valid_output_file(fname):
             raise ValueError(f'{fname} is not a valid path to save the file')
         else:
-            #print(self)
             s = self._to_str()
             with open(fname, 'w') as fp:
                 fp.write(s)
