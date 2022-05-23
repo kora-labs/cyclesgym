@@ -174,13 +174,17 @@ class Fertilizer(Implementer):
         fertilization event happening between t and t + delta that we could not
         overwrite.
         """
+        doy = 1
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'FIXED_FERTILIZATION':
-                new_op = self._update_operation(old_op=op_v,
+                start_year = op_k[0]
+                doy = op_k[1]
+                new_op = self._update_operation(start_year, doy, 
+                                                old_op = op_v,
                                                 new_masses={n: 0 for n in self.affected_nutrients},
                                                 mode='absolute')
                 self.operation_manager.insert_new_operations(
-                    {op_k: new_op}, force=True)
+                    new_op, force=True)
         self.operation_manager.save(self.operation_fname)
 
     def _check_collision(self, year, doy, operation_details):

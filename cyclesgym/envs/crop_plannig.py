@@ -45,15 +45,15 @@ class CropPlannig(CyclesEnv):
 
     def _generate_action_space(self, n_actions):
         self.action_space = spaces.Tuple((spaces.Discrete(n_actions,),
-                                          spaces.Box(low=0, high=1.0, shape=[1]),
-                                          spaces.Box(low=0, high=1.0, shape=[1]),
-                                          spaces.Box(low=0, high=1.0, shape=[1])))
+                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1]),
+                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1]),
+                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1])))
         self.n_actions = n_actions
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=WeatherCropObserver.lower_bound,
-            high=WeatherCropObserver.upper_bound,
+            low=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
+            high=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
             shape=WeatherCropObserver.lower_bound.shape,
             dtype=np.float32)
         #TODO: write observation of soil data
