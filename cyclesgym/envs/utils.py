@@ -1,14 +1,15 @@
 import os as _os
 import weakref
-from pathlib import Path
 import numpy as np
-
-from datetime import datetime, date, timedelta
+import datetime
 from uuid import uuid4
+
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 
-__all__ = ['MyTemporaryDirectory', 'create_sim_id', 'date2ydoy', 'ydoy2date']
+__all__ = ['MyTemporaryDirectory', 'create_sim_id', 'date2ydoy', 'ydoy2date',
+           'cap_date']
 
 
 class MyTemporaryDirectory(TemporaryDirectory):
@@ -27,11 +28,11 @@ class MyTemporaryDirectory(TemporaryDirectory):
 
 
 def create_sim_id():
-    return datetime.now().strftime('%Y_%m_%d_%H_%M_%S-') + str(uuid4())
+    return datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S-') + str(uuid4())
 
 
 def date2ydoy(date):
-    def date2ydoy_single(date):
+    def date2ydoy_single(date: datetime.date):
         tmp = date.timetuple()
         return tmp.tm_year, tmp.tm_yday
 
@@ -49,13 +50,13 @@ def date2ydoy(date):
 
 
 def ydoy2date(y, doy):
-    def ydoy2date_single(y, doy):
+    def ydoy2date_single(y: int, doy: int):
         # Timedelta does not work with np.int64
         if isinstance(y, np.int64):
             y = int(y)
         if isinstance(doy, np.int64):
             doy = int(doy)
-        return date(y, 1, 1) + timedelta(doy - 1)
+        return datetime.date(y, 1, 1) + datetime.timedelta(doy - 1)
 
     if hasattr(y, '__iter__') and hasattr(doy, '__iter__'):
         if len(y) == len(doy):
@@ -69,3 +70,11 @@ def ydoy2date(y, doy):
                              f'instead.')
     else:
         return ydoy2date_single(y, doy)
+
+
+def cap_date(date: datetime.date, end_year: int):
+    """
+    Clip date to final year.
+    """
+    return min([date,
+                datetime.date(year=end_year, month=12, day=31)])
