@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 
 
-class CropPlannig(CyclesEnv):
+class CropPlanning(CyclesEnv):
     def __init__(self, start_year, end_year, rotation_crops):
         super().__init__(SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
