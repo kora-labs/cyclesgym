@@ -52,7 +52,6 @@ class CornNew(CyclesEnv):
         self.n_actions = n_actions
 
     def _generate_observation_space(self):
-        #run a check here to make sure they are the same size
         self.observation_space = spaces.Box(
             low=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
             high=np.array(WeatherCropDoyNObserver.upper_bound,dtype=np.float32),
