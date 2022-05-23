@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from cyclesgym.envs.utils import date2ydoy
+from cyclesgym.envs.utils import date2ydoy, cap_date
 import datetime
 from cyclesgym.managers import WeatherManager, CropManager
 
@@ -22,8 +22,7 @@ class WheatherObserver(object):
     def compute_obs(self,
                     date: datetime.date):
         # Make sure we did not go into not simulated year when advancing time
-        date = min([date,
-                    datetime.date(year=self.end_year, month=12, day=31)])
+        date = cap_date(date, self.end_year)
         year, doy = date2ydoy(date)
 
         imm_weather_data = self.weather_manager.immutables.iloc[0, :]
@@ -52,8 +51,7 @@ class CropObserver(object):
     def compute_obs(self,
                     date: datetime.date):
         # Make sure we did not go into not simulated year when advancing time
-        date = min([date,
-                    datetime.date(year=self.end_year, month=12, day=31)])
+        date = cap_date(date, self.end_year)
         year, doy = date2ydoy(date)
 
         crop_data = self.crop_manager.get_day(year, doy)
@@ -84,8 +82,7 @@ class WeatherCropObserver(object):
     def compute_obs(self,
                     date: datetime.date):
         # Make sure we did not go into not simulated year when advancing time
-        date = min([date,
-                    datetime.date(year=self.end_year, month=12, day=31)])
+        date = cap_date(date, self.end_year)
         year, doy = date2ydoy(date)
 
         crop_data = self.crop_manager.get_day(year, doy).iloc[0, 4:]
@@ -116,6 +113,9 @@ class WeatherCropDoyNObserver(WeatherCropObserver):
     def compute_obs(self,
                     date: datetime.date,
                     N: float):
+
+        # Make sure we did not go into not simulated year when advancing time
+        date = cap_date(date, self.end_year)
         obs = super().compute_obs(date)
         if self.obs_names[-1] != 'N TO DATE':
             self.obs_names += ['DOY', 'N TO DATE']

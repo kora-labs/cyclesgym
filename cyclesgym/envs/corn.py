@@ -171,6 +171,7 @@ def compare_env():
         s, r, done, info = env.step(a)
         print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
         if done:
+            print(f'Both done? {done_old == done}')
             break
     print(f'Time elapsed:\t{time.time() - t}')
 

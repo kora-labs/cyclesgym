@@ -3,6 +3,7 @@ import shutil
 import stat
 import subprocess
 from datetime import datetime
+import calendar
 from pathlib import Path
 from uuid import uuid4
 
@@ -96,15 +97,16 @@ class CornEnvOld(gym.Env):
         # If action is meaningful: rewrite operation file and relaunch simulation. Else: don't simulate, retrieve new state and continue
         # TODO: Setting year this way is only valid for one year simulation
         year = self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR']
+        end_day = 366 if calendar.isleap(year=year) else 365
         if self._check_new_action(action, year, self.doy):
             self._implement_action(action, year=year, doy=self.doy)
             self._call_cycles(debug=debug)
         self.N_to_date += self.maxN * action / (self.n_actions - 1)
 
         self.doy += self.delta
-        self.doy = np.clip(self.doy, 1, 365)
+        done = self.doy > end_day
+        self.doy = np.clip(self.doy, 1, end_day)
         obs = self.compute_obs(year=year, doy=self.doy)
-        done = self.doy > 365
         if done:
             self._move_sim_specific_files()
 
