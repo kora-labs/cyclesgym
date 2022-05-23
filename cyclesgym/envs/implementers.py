@@ -130,7 +130,9 @@ class Fertilizer(Implementer):
         if old_op is None:
             old_masses = {n: 0 for n in self.affected_nutrients}
         else:
-            old_masses = {n: v for n, v in old_op.items() if n in self.affected_nutrients}
+            total_mass = old_op['MASS']
+            old_masses = {n: v * total_mass for n, v in old_op.items()
+                          if n in self.affected_nutrients}
         return old_masses != new_masses
 
     def _get_operation_key(self, year, doy):
@@ -217,7 +219,7 @@ class Fertilizer(Implementer):
 
         # TODO: include mode in the call of the Abstract class in some way. Right now abstract class has no "mode"
 
-        key = self._get_operation_key(year, doy)
+        key = self._get_operation_key(year, doy) # TODO: Weird we get a dict with massese as input and return a dict {k: masses} as output. Can't we add the key later?
 
         assert mode in ['increment', 'absolute'], \
             'Can only update in increment or absolute mode'
