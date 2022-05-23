@@ -20,8 +20,8 @@ corn_price_dollars_per_tonne = {y: CORN_BUSHEL_PER_TONNE * corn_price_dollars_pe
 corn_silage_price_dollars_per_tonne = {y: 10 for y in range(1980, 2020)}
 
 # Avg US price of soybean for 2020 from
-# https://quickstats.nass.usda.gov/results/87E1DA89-91D0-313A-80B5-EC5326DD3332
-soy_beans_price_dollars_per_bushel = {y: 12 for y in range(1980, 2020)}
+# https://quickstats.nass.usda.gov/results/1A09097A-EFA4-3C47-B1D4-E7ACDFAA2575
+soy_beans_price_dollars_per_bushel = {y: 9.89 for y in range(1980, 2020)}
 soy_beans_price_dollars_per_tonne = {y: SOYBEAN_BUSHEL_PER_TONNE * soy_beans_price_dollars_per_bushel[y]
                                      for y in soy_beans_price_dollars_per_bushel.keys()}
 
