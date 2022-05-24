@@ -1,7 +1,7 @@
 from datetime import timedelta
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.corn_old import CornEnvOld
-from cyclesgym.envs.observers import *
+from cyclesgym.envs.observers import compound_observer, CropObserver, WeatherObserver, NToDateObserver
 from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, NProfitabilityRewarder
 from cyclesgym.envs.implementers import *
 
@@ -49,6 +49,7 @@ class CornNew(CyclesEnv):
                          REINIT_FILE='N / A',
                          delta=delta)
         self._post_init_setup()
+        self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
 
@@ -59,9 +60,9 @@ class CornNew(CyclesEnv):
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
-            high=np.array(WeatherCropDoyNObserver.upper_bound,dtype=np.float32),
-            shape=WeatherCropDoyNObserver.lower_bound.shape,
+            low=np.array(self.observer.lower_bound, dtype=np.float32),
+            high=np.array(self.observer.upper_bound, dtype=np.float32),
+            shape=self.observer.lower_bound.shape,
             dtype=np.float32)
 
     def _init_input_managers(self):
@@ -81,11 +82,11 @@ class CornNew(CyclesEnv):
                              self.season_file]
 
     def _init_observer(self, *args, **kwargs):
-        self.observer = WeatherCropDoyNObserver(
-            weather_manager=self.weather_manager,
-            crop_manager=self.crop_output_manager,
-            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
-        )
+        end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        self.observer = compound_observer([WeatherObserver(weather_manager=self.weather_manager, end_year=end_year),
+                                           CropObserver(crop_manager=self.crop_output_manager, end_year=end_year),
+                                           NToDateObserver(end_year=end_year)
+                                           ])
 
     def _init_rewarder(self, *args, **kwargs):
         self.rewarder = compound_rewarder([CropRewarder(self.season_manager, 'CornRM.90'),
