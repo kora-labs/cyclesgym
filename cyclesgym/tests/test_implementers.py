@@ -1,7 +1,5 @@
 import unittest
-import numpy as np
 import shutil
-from pathlib import Path
 
 from cyclesgym.envs.implementers import Fertilizer
 from cyclesgym.managers import OperationManager
@@ -129,4 +127,10 @@ class TestFertilizer(unittest.TestCase):
         new_manager = OperationManager(self.fert.operation_fname)
         assert new_manager.op_dict == self.fert.operation_manager.op_dict
 
+    def test_reset(self):
+        pass
+
+
+if __name__ == '__main__':
+    unittest.main()
 

@@ -33,3 +33,7 @@ class TestRewarders(unittest.TestCase):
         # Test out of harvest
         r = self.corn_rewarder.compute_reward(date=date, delta=3)
         assert r == 0
+
+
+if __name__ == '__main__':
+    unittest.main()
