@@ -27,7 +27,7 @@ class WeatherObserver(Observer):
                  end_year: int):
         super(WeatherObserver, self).__init__(end_year)
         self.weather_manager = weather_manager
-        self.Nobs = 24
+        self.Nobs = 10
         self.lower_bound = np.full((self.Nobs,), -np.inf)
         self.upper_bound = np.full((self.Nobs,), np.inf)
 
@@ -140,7 +140,12 @@ def compound_observer(obs_list: list):
             obs = [o for o in obs if o.size > 0]
             self.obs_names = [name for o in obs_list for name in o.obs_names]
 
-            self.Nobs = sum([o.size for o in obs])
+            new_Nobs = sum([o.size for o in obs])
+            if new_Nobs != self.Nobs:
+                print(f'Warning: runtime number of observation for {self} is different then the original'
+                      f'one: Before: {self.Nobs}, runtime: {new_Nobs}')
+                print(self.obs_list)
+            self.Nobs = new_Nobs
             return np.concatenate(obs)
 
     return Compound(obs_list)

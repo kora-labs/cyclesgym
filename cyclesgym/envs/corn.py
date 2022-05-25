@@ -5,7 +5,8 @@ from cyclesgym.envs.observers import compound_observer, CropObserver, \
 from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
     NProfitabilityRewarder
 from cyclesgym.envs.implementers import *
-
+import pathlib
+import shutil
 from typing import Tuple
 
 import numpy as np
@@ -14,20 +15,25 @@ from gym import spaces
 
 from cyclesgym.managers import *
 
-__all__ = ['CornNew']
+__all__ = ['Corn']
 
 
-class CornNew(CyclesEnv):
+class Corn(CyclesEnv):
     def __init__(self, delta,
                  n_actions,
                  maxN,
                  operation_file='ContinuousCorn.operation',
                  soil_file='GenericHagerstown.soil',
-                 weather_file='RockSprings.weather'
+                 weather_file='RockSprings.weather',
+                 start_year=1980,
+                 end_year=1980,
+                 use_reinit=True
                  ):
-        super().__init__(SIMULATION_START_YEAR=1980,
-                         SIMULATION_END_YEAR=1980,
-                         ROTATION_SIZE=1,
+        self.rotation_size = end_year - start_year + 1
+        self.use_reinit = use_reinit
+        super().__init__(SIMULATION_START_YEAR=start_year,
+                         SIMULATION_END_YEAR=end_year,
+                         ROTATION_SIZE=self.rotation_size,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
                          HOURLY_INFILTRATION=1,
@@ -110,20 +116,36 @@ class CornNew(CyclesEnv):
         rerun_cycles = self.implementer.implement_action(
             date=self.date, mass=action)
 
-        if rerun_cycles:
-            self._call_cycles(debug=False)
+        doy = None
+        reinit = False
+        if self.use_reinit:
+            reinit = self._check_is_mid_year()
+            if reinit:
+                doy = 365
+
+        if rerun_cycles or reinit:
+            self._call_cycles(debug=False, reinit=reinit, doy=doy)
 
         # Advance time
         self.date += timedelta(days=self.delta)
 
+        if reinit:
+            self._update_control_file()
+            self._update_reinit_file()
+            self._update_operation_file()
+            self.implementer.start_year = self.reinit_year + 1
+
+        self.season_manager.update_file(self.season_file)
         # Compute reward
         r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
-        # Compute state
-        obs = self.observer.compute_obs(self.date, N=action)
+        done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+
+        if reinit and not done:
+            self._call_cycles(debug=False)
 
         # Compute
-        done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        obs = self.observer.compute_obs(self.date, N=action)
 
         return obs, r, done, {}
 
@@ -139,3 +161,68 @@ class CornNew(CyclesEnv):
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
         return self.observer.compute_obs(self.date, N=0)
+
+    def _create_operation_file(self):
+        """Create operation file by copying the base one."""
+        super(Corn, self)._create_operation_file()
+        operations = [key for key in self.op_manager.op_dict.keys() if key[2] != 'FIXED_FERTILIZATION']
+        for i in range(self.rotation_size - 1):
+            for op in operations:
+                copied_op = (i + 2,) + op[1:]
+                if not any(key[0] == copied_op[0] and key[2] == copied_op[2] for key in operations):
+                    self.op_manager.op_dict[copied_op] = self.op_manager.op_dict[op]
+                    print(f'Copying operation {copied_op} into the operation file, as no operation'
+                          f' of the same kind is available for that year.')
+
+        self.op_manager.save(self.op_file)
+
+    def _create_control_file(self):
+        super(Corn, self)._create_control_file()
+        if self.use_reinit:
+            self.reinit_year = int((self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
+                                    + self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])/2)
+            self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.reinit_year
+            self.ctrl_manager.save(self.ctrl_file)
+
+    def _update_reinit_file(self):
+        new_reinit = self.input_dir.name.joinpath('reinit.dat')
+        shutil.copy(self._get_output_dir().joinpath('reinit.dat'), new_reinit)
+
+        lines = []
+        with open(new_reinit, 'r') as f:
+            for i, line in enumerate(f.readlines()):
+                line_splitted = line.split()
+                if len(line_splitted) > 0:
+                    if line_splitted[1].isnumeric():
+                        if int(line_splitted[1]) == self.reinit_year:
+                            indx = i
+                            line = line_splitted
+                            line[1] = str(int(line[1]) + 1)
+                            line[3] = '1'
+                            line = line[0] + '    ' + line[1] + '    ' + line[2] + '     ' + line[3] + '\n'
+                lines.append(line)
+
+        with open(new_reinit, 'w') as f:
+            for i, line in enumerate(lines):
+                if i >= indx:
+                    f.write(line)
+
+    def _update_control_file(self):
+        self.ctrl_manager.ctrl_dict['SIMULATION_START_YEAR'] = self.reinit_year + 1
+        self.ctrl_manager.ctrl_dict['SIMULATION_END_YEAR'] = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        self.ctrl_manager.ctrl_dict['USE_REINITIALIZATION'] = 1
+        self.ctrl_manager.ctrl_dict['REINIT_FILE'] = pathlib.Path(self.input_dir.name.stem).joinpath('reinit.dat')
+        self.ctrl_manager.save(self.ctrl_file)
+
+    def _update_operation_file(self):
+        reference_year = self.reinit_year-self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR'] + 1
+        for key in list(self.op_manager.op_dict.keys()):
+            operation = self.op_manager.op_dict.pop(key)
+            if key[0] > reference_year:
+                self.op_manager.op_dict[(key[0] - reference_year, *key[1:])] = operation
+
+        self.op_manager.save(self.op_file)
+
+    def _check_is_mid_year(self):
+        year_of_next_step = (self.date + timedelta(days=self.delta)).year
+        return (year_of_next_step > self.reinit_year and self.date.year == self.reinit_year)
