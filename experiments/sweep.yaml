@@ -1,0 +1,18 @@
+project: agro-rl
+program: train.py
+method: bayes
+metric:
+  goal: maximize
+  name: stochastic_return_mean
+parameters:
+  norm_reward:
+    values: [True, False]
+
+  n_actions: 
+    values: [3, 5, 7, 9, 11]
+
+  soil_env:
+    values: [True, False]
+
+  method:
+    values: ["DQN", "A2C", "PPO"]
