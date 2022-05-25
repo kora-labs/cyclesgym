@@ -4,11 +4,11 @@ import subprocess
 import unittest
 import numpy as np
 
-from cyclesgym.envs.corn import CornNew
+from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.common import PartialObsEnv
 from cyclesgym.envs.utils import date2ydoy
 from cyclesgym.managers import *
-
+from cyclesgym.utils import compare_env, maximum_absolute_percentage_error
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 
 TEST_FILENAMES = ['NCornTest.ctrl',
@@ -55,7 +55,7 @@ class TestCornEnv(unittest.TestCase):
 
         # Start gym env
         operation_file = TEST_FILENAMES[2]
-        env = CornNew(delta=1, maxN=150, n_actions=16,
+        env = Corn(delta=1, maxN=150, n_actions=16,
                       operation_file=operation_file)
 
         # Run simulation with same management and compare
@@ -86,13 +86,35 @@ class TestCornEnv(unittest.TestCase):
     def _call_cycles(ctrl):
         subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_PATH)
 
+    def test_fast_multiyear_against_continuous_multiyear(self):
+        self.START_YEAR = 1980
+        self.END_YEAR = 1983
+
+        delta = 7
+        n_actions = 7
+        maxN = 120
+
+        self.env_cont = Corn(delta=delta, n_actions=n_actions, maxN=maxN, start_year=self.START_YEAR,
+                             end_year=self.END_YEAR, use_reinit=False)
+
+        self.env_impr = Corn(delta=delta, n_actions=n_actions, maxN=maxN, start_year=self.START_YEAR,
+                             end_year=self.END_YEAR)
+
+        obs_cont, obs_impr, time_cont, time_impr = compare_env(self.env_cont, self.env_impr)
+        print(f'Time of continuous environemnt over {self.END_YEAR - self.START_YEAR} years: {time_cont}')
+        print(f'Time of improved environemnt over {self.END_YEAR - self.START_YEAR} years: {time_impr}')
+
+        max_ape = maximum_absolute_percentage_error(obs_cont, obs_impr)
+        print(f'Maximum percentage error: {max_ape} %')
+        self.assertLess(max_ape, 1, f'Maximum percentage error: {max_ape} % is less then the threshold 1')
+
 
 class TestPartiallyObservableEnv(unittest.TestCase):
     def setUp(self) -> None:
         copy_cycles_test_files()
-        self.f_env = CornNew(delta=1, maxN=150, n_actions=16,
+        self.f_env = Corn(delta=1, maxN=150, n_actions=16,
                                 operation_file=TEST_FILENAMES[2])
-        self.base_env = CornNew(delta=1, maxN=150, n_actions=16,
+        self.base_env = Corn(delta=1, maxN=150, n_actions=16,
                                 operation_file=TEST_FILENAMES[2])
         n_obs = np.prod(self.base_env.observation_space.shape)
 
