@@ -38,6 +38,7 @@ class _CornMultiYearContinue(CornNew):
                                       REINIT_FILE='N / A',
                                       delta=delta)
         self._post_init_setup()
+        self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
 

@@ -38,7 +38,7 @@ class Implementer(object):
     def _get_operation_key(self, year, doy, operation_details):
         raise NotImplementedError
 
-    def _create_new_operation(self, key, operation_details):
+    def _create_new_operation(self, year, key, operation_details):
         raise NotImplementedError
 
     def implement_action(self, date: datetime.date, operation_details: dict) -> bool:
@@ -334,14 +334,12 @@ class Planter(Implementer):
 
     def reset(self):
         """
-        Set to zero the masses for all the affected nutrients.
+        Set to zero the planting events of all the affected crops.
 
         Before starting a new simulation, we want to make sure that the only
-        way the affected nutrients can be provided is through our
-        fertilization. This is why we reset everything to zero (overwriting
-        during the unrolling of the env may not be sufficient as there may be
-        fertilization event happening between t and t + delta that we could not
-        overwrite.
+        way the affected crops can be planted is using the planter implementer.
+        This is why we delete all the operations that involve planting affected
+        crops
         """
         op_to_delete = []
         for op_k, op_v in self.operation_manager.op_dict.items():
@@ -366,21 +364,18 @@ class Planter(Implementer):
 
     def _update_operation(self, year, doy, old_operation, operation_details) -> dict:
         """
-        Update the masses of a fertilization operation.
+        Update the planting operation.
 
         Parameters
         ----------
         old_operation: dict
             Dictionary of operation detials of old op
         operation_details: dict
-            Dict of new masses. Keys should be possible nutrients
-        Returns
+            Dict of new operation.
         -------
         new_op: dict
             Dictionary of updated planting operation
         """
-
-        key = self._get_operation_key(year, doy)
 
         assert operation_details['CROP'] in self.valid_crops, \
             f'New planting operation can only specify valid crops \n' \
