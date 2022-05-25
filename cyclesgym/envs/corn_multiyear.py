@@ -38,6 +38,7 @@ class _CornMultiYearContinue(CornNew):
                                       REINIT_FILE='N / A',
                                       delta=delta)
         self._post_init_setup()
+        self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
 
@@ -133,8 +134,7 @@ class CornMultiYear(_CornMultiYearContinue):
 
         self.season_manager.update_file(self.season_file)
         # Compute reward
-        r = self.rewarder.compute_reward(
-            N_mass, date=self.date, delta=self.delta)
+        r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=N_mass)
 
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
 

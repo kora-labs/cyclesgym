@@ -4,13 +4,15 @@ import stat
 import subprocess
 from datetime import date
 import os
+import numpy as np
+from gym import spaces
 
 from cyclesgym.managers import *
 from cyclesgym.paths import CYCLES_PATH, PROJECT_PATH
 from cyclesgym.envs.utils import *
 
 
-__all__ = ['CyclesEnv']
+__all__ = ['CyclesEnv', 'PartialObsEnv']
 
 
 class CyclesEnv(gym.Env):
@@ -228,6 +230,7 @@ class CyclesEnv(gym.Env):
         """
         Update the output file managers based on the corresponding file paths.
         """
+        # TODO: give a warning if self.output_managers, self.output_files not of same lenght
         for manager, file in zip(self.output_managers, self.output_files):
             manager.update_file(file)
 
@@ -311,6 +314,40 @@ class CyclesEnv(gym.Env):
     def _call_cycles(self, debug=False, reinit=False, doy=None):
         self._call_cycles_raw(debug=debug, reinit=reinit, doy=doy)
         self._update_output_managers()
+
+
+class PartialObsEnv(gym.ObservationWrapper):
+    def __init__(self, env, mask=None):
+        super().__init__(env)
+
+        if mask is None:
+            mask = np.ones(self.observation_space.shape, dtype=bool)
+        else:
+            mask = np.asarray(mask, dtype=bool)
+
+        if mask.shape != self.observation_space.shape:
+            raise ValueError(f'The shape of the observation of the base '
+                             f'environment is {self.observation_space.shape},'
+                             f'which is different from the mask shape '
+                             f'{mask.shape}')
+        self.mask = mask
+
+        self.observation_space = spaces.Box(
+            low=self.env.observation_space.low[mask],
+            high=self.env.observation_space.high[mask],
+            shape=(np.count_nonzero(mask),),
+            dtype=self.env.observation_space.dtype)
+
+    def reset(self, **kwargs):
+        obs = super().reset(**kwargs)
+        if len(self.env.observer.obs_names) > np.count_nonzero(self.mask):
+            obs_names = np.asarray(self.env.observer.obs_names)[self.mask]
+            self.env.observer.obs_names = list(obs_names)
+        return obs
+
+    def observation(self, obs):
+        return obs[self.mask]
+
 
 
 if __name__ == '__main__':

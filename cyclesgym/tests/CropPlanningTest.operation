@@ -1,7 +1,7 @@
 PLANTING
 YEAR                1
-DOY                 115
-END_DOY             115
+DOY                 10
+END_DOY             200
 MAX_SMC             1.0
 MIN_SMC             0.0
 MIN_SOIL_TEMP       0.0
@@ -14,12 +14,12 @@ CLIPPING_END        366
 
 PLANTING
 YEAR                2
-DOY                 120
-END_DOY             120
+DOY                 10
+END_DOY             200
 MAX_SMC             1.0
 MIN_SMC             0.0
 MIN_SOIL_TEMP       0.0
-CROP                SoybeanMG.5
+CROP                SoybeanMG.3
 USE_AUTO_IRR        0
 USE_AUTO_FERT       0
 FRACTION            1.0

@@ -1,8 +1,9 @@
 from datetime import timedelta
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.corn_old import CornEnvOld
-from cyclesgym.envs.observers import *
-from cyclesgym.envs.rewarders import *
+from cyclesgym.envs.observers import compound_observer, CropObserver, \
+    WeatherObserver, NToDateObserver
+from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
+    NProfitabilityRewarder
 from cyclesgym.envs.implementers import *
 
 from typing import Tuple
@@ -10,13 +11,20 @@ from typing import Tuple
 import numpy as np
 from gym import spaces
 
+
 from cyclesgym.managers import *
 
 __all__ = ['CornNew']
 
 
 class CornNew(CyclesEnv):
-    def __init__(self, delta, n_actions, maxN):
+    def __init__(self, delta,
+                 n_actions,
+                 maxN,
+                 operation_file='ContinuousCorn.operation',
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather'
+                 ):
         super().__init__(SIMULATION_START_YEAR=1980,
                          SIMULATION_END_YEAR=1980,
                          ROTATION_SIZE=1,
@@ -37,12 +45,13 @@ class CornNew(CyclesEnv):
                          ANNUAL_PROFILE_OUT=0,
                          ANNUAL_NFLUX_OUT=0,
                          CROP_FILE='GenericCrops.crop',
-                         OPERATION_FILE='ContinuousCorn.operation',
-                         SOIL_FILE='GenericHagerstown.soil',
-                         WEATHER_FILE='RockSprings.weather',
+                         OPERATION_FILE=operation_file,
+                         SOIL_FILE=soil_file,
+                         WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=delta)
         self._post_init_setup()
+        self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
 
@@ -53,9 +62,9 @@ class CornNew(CyclesEnv):
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=np.array(WeatherCropDoyNObserver.lower_bound,dtype=np.float32),
-            high=np.array(WeatherCropDoyNObserver.upper_bound,dtype=np.float32),
-            shape=WeatherCropDoyNObserver.lower_bound.shape,
+            low=np.array(self.observer.lower_bound, dtype=np.float32),
+            high=np.array(self.observer.upper_bound, dtype=np.float32),
+            shape=self.observer.lower_bound.shape,
             dtype=np.float32)
 
     def _init_input_managers(self):
@@ -75,14 +84,15 @@ class CornNew(CyclesEnv):
                              self.season_file]
 
     def _init_observer(self, *args, **kwargs):
-        self.observer = WeatherCropDoyNObserver(
-            weather_manager=self.weather_manager,
-            crop_manager=self.crop_output_manager,
-            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
-        )
+        end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        self.observer = compound_observer([WeatherObserver(weather_manager=self.weather_manager, end_year=end_year),
+                                           CropObserver(crop_manager=self.crop_output_manager, end_year=end_year),
+                                           NToDateObserver(end_year=end_year)
+                                           ])
 
     def _init_rewarder(self, *args, **kwargs):
-        self.rewarder = CornNProfitabilityRewarder(self.season_manager)
+        self.rewarder = compound_rewarder([CropRewarder(self.season_manager, 'CornRM.90'),
+                                           NProfitabilityRewarder()])
 
     def _init_implementer(self, *args, **kwargs):
         self.implementer = FixedRateNFertilizer(
@@ -96,9 +106,9 @@ class CornNew(CyclesEnv):
         return self.maxN * action / (self.n_actions - 1)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, dict]:
-        N_mass = self._action2mass(action)
+        action = self._action2mass(action)
         rerun_cycles = self.implementer.implement_action(
-            date=self.date, mass=N_mass)
+            date=self.date, mass=action)
 
         if rerun_cycles:
             self._call_cycles(debug=False)
@@ -107,11 +117,10 @@ class CornNew(CyclesEnv):
         self.date += timedelta(days=self.delta)
 
         # Compute reward
-        r = self.rewarder.compute_reward(
-            N_mass, date=self.date, delta=self.delta)
+        r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
         # Compute state
-        obs = self.observer.compute_obs(self.date, N=N_mass)
+        obs = self.observer.compute_obs(self.date, N=action)
 
         # Compute
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -130,51 +139,3 @@ class CornNew(CyclesEnv):
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
         return self.observer.compute_obs(self.date, N=0)
-
-
-def deploy_env(old=False):
-    import time
-    if old:
-        env = CornEnvOld('ContinuousCorn.ctrl')
-    else:
-        env = CornNew(delta=7, n_actions=7, maxN=120)
-    env.reset()
-    t = time.time()
-    while True:
-        a = env.action_space.sample()
-        s, r, done, info = env.step(a)
-        if done:
-            break
-    print(f'Time elapsed:\t{time.time() - t}')
-
-
-def compare_env():
-    import time
-    delta = 7
-    n_actions = 7
-    maxN=120
-    old_env = CornEnvOld('ContinuousCorn.ctrl',
-                         delta=delta,
-                         n_actions=n_actions,
-                         maxN=maxN)
-    env = CornNew(delta=delta,
-                  n_actions=n_actions,
-                  maxN=maxN)
-    s_old = old_env.reset()
-    s = env.reset()
-    print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-
-    t = time.time()
-    while True:
-        a = env.action_space.sample()
-        s_old, r_old, done_old, info_old = old_env.step(a)
-        s, r, done, info = env.step(a)
-        print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-        if done:
-            break
-    print(f'Time elapsed:\t{time.time() - t}')
-
-
-if __name__ == '__main__':
-    # deploy_env(old=False)
-    compare_env()
