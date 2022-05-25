@@ -1,5 +1,5 @@
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.observers import WheatherObserver, compound_observer, CropObserver, SoilNObserver
+from cyclesgym.envs.observers import SoilNObserver
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
 from cyclesgym.envs.implementers import RotationPlanter
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager

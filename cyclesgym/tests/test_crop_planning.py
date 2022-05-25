@@ -31,9 +31,9 @@ class TestCropPlanning(unittest.TestCase):
                                                            'CornSilageRM.90.dat'))
         crop_from_sim_2 = CropManager(CYCLES_PATH.joinpath('output',
                                                            self.fnames[0].replace('.ctrl', ''),
-                                                           'SoybeanMG.5.dat'))
+                                                           'SoybeanMG.3.dat'))
 
-        env = CropPlanning(start_year=1980, end_year=1990, rotation_crops=['CornSilageRM.90', 'SoybeanMG.5'])
+        env = CropPlanning(start_year=1980, end_year=1990, rotation_crops=['CornSilageRM.90', 'SoybeanMG.3'])
         env._create_sim_id = self.custom_sim_id
 
         env.reset()
