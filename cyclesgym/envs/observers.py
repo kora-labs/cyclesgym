@@ -55,6 +55,21 @@ class DailyOutputObserver(Observer):
         super(DailyOutputObserver, self).__init__(end_year)
         self.manager = manager
         self.observed_columns = None
+        self.columns_to_process = None
+        self.processing_maps = None
+
+    def _process_raw_data(self, data, column_list=None, map_list=None):
+        """
+        Data processing to handle non-numeric values.
+        """
+        if column_list is None or map_list is None:
+            return data
+
+        if len(column_list) != len(map_list):
+            raise ValueError('Column list and map list should be of the same length')
+        for c, m in zip(column_list, map_list):
+            data[c] = m[data[c]]
+        return data
 
     def compute_obs(self,
                     date: datetime.date,
@@ -67,6 +82,11 @@ class DailyOutputObserver(Observer):
         if not data.empty:
             data = data.iloc[0, self.observed_columns]
 
+        # Handle non-numeric values
+        data = self._process_raw_data(data,
+                                      column_list=self.columns_to_process,
+                                      map_list=self.processing_maps)
+
         obs = data
         if self.obs_names is None:
             self.obs_names = list(obs.index)
@@ -77,14 +97,27 @@ class DailyOutputObserver(Observer):
 
 class CropObserver(DailyOutputObserver):
 
+    # Mapping to assign numeric values to plant life stage
+    stage_mapping = \
+        {'N/A': 0,
+         'PRE_EMERGENCE': 1,
+         'VEGETATIVE_GROWTH': 2,
+         'REPRODUCTIVE_GROWTH': 3,
+         'MATURITY': 4,
+         'KILLED': 5}
+
     def __init__(self,
                  crop_manager: CropManager,
                  end_year: int):
         super(CropObserver, self).__init__(crop_manager, end_year)
-        self.Nobs = 14
+        self.Nobs = 15
         self.lower_bound = np.full((self.Nobs,), -np.inf)
         self.upper_bound = np.full((self.Nobs,), np.inf)
-        self.observed_columns = 4 + np.arange(self.Nobs)
+        self.observed_columns = 3 + np.arange(self.Nobs)
+
+        # Processing plant stage
+        self.columns_to_process = [0]
+        self.processing_maps = [self.stage_mapping]
 
 
 class NToDateObserver(Observer):

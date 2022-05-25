@@ -34,7 +34,7 @@ class TestObservers(unittest.TestCase):
         self.N_to_date_observer = NToDateObserver(end_year=1980)
         self.weather_crop_observer = compound_observer([self.weather_observer, self.crop_observer])
         self.weather_target_obs = np.concatenate((np.array([40.6875, 0, 10]), np.arange(7)))
-        self.crop_target_obs = np.arange(14)
+        self.crop_target_obs = np.concatenate(([0], np.arange(14)))
         self.N_to_date_target_obs = list(zip(np.arange(1, 11), np.arange(2, 21, step=2)))
         self.N_to_date_target_obs =[np.array(ele) for ele in self.N_to_date_target_obs]
         self.soil_target_obs = np.array([8873.886558, 37.068387, 8.968119, 0.037371, 0.000000, 0.037371, 0.068560,
@@ -54,7 +54,7 @@ class TestObservers(unittest.TestCase):
         date = datetime.date(year=1980, month=1, day=1)
         obs = self.weather_crop_observer.compute_obs(date)
         assert np.all(obs == np.concatenate([self.weather_target_obs, self.crop_target_obs]))
-        assert self.weather_crop_observer.Nobs == 24
+        assert self.weather_crop_observer.Nobs == 25
 
     def test_N_to_date_observer(self):
         date = datetime.date(year=1980, month=1, day=1)
