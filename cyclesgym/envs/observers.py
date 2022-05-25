@@ -27,7 +27,7 @@ class WeatherObserver(Observer):
                  end_year: int):
         super(WeatherObserver, self).__init__(end_year)
         self.weather_manager = weather_manager
-        self.Nobs = 24
+        self.Nobs = 10
         self.lower_bound = np.full((self.Nobs,), -np.inf)
         self.upper_bound = np.full((self.Nobs,), np.inf)
 
