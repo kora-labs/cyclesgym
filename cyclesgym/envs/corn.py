@@ -1,14 +1,16 @@
 from datetime import timedelta
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.corn_old import CornEnvOld
-from cyclesgym.envs.observers import compound_observer, CropObserver, WeatherObserver, NToDateObserver
-from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, NProfitabilityRewarder
+from cyclesgym.envs.observers import compound_observer, CropObserver, \
+    WeatherObserver, NToDateObserver
+from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
+    NProfitabilityRewarder
 from cyclesgym.envs.implementers import *
 
 from typing import Tuple
 
 import numpy as np
 from gym import spaces
+
 
 from cyclesgym.managers import *
 
@@ -137,52 +139,3 @@ class CornNew(CyclesEnv):
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
         return self.observer.compute_obs(self.date, N=0)
-
-
-def deploy_env(old=False):
-    import time
-    if old:
-        env = CornEnvOld('ContinuousCorn.ctrl')
-    else:
-        env = CornNew(delta=7, n_actions=7, maxN=120)
-    env.reset()
-    t = time.time()
-    while True:
-        a = env.action_space.sample()
-        s, r, done, info = env.step(a)
-        if done:
-            break
-    print(f'Time elapsed:\t{time.time() - t}')
-
-
-def compare_env():
-    import time
-    delta = 7
-    n_actions = 7
-    maxN=120
-    old_env = CornEnvOld('ContinuousCorn.ctrl',
-                         delta=delta,
-                         n_actions=n_actions,
-                         maxN=maxN)
-    env = CornNew(delta=delta,
-                  n_actions=n_actions,
-                  maxN=maxN)
-    s_old = old_env.reset()
-    s = env.reset()
-    print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-
-    t = time.time()
-    while True:
-        a = env.action_space.sample()
-        s_old, r_old, done_old, info_old = old_env.step(a)
-        s, r, done, info = env.step(a)
-        print(f'Observation error {np.linalg.norm(s_old - s, ord=np.inf)}')
-        if done:
-            print(f'Both done? {done_old == done}')
-            break
-    print(f'Time elapsed:\t{time.time() - t}')
-
-
-if __name__ == '__main__':
-    # deploy_env(old=False)
-    compare_env()
