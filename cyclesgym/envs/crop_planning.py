@@ -1,7 +1,7 @@
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.observers import SoilNObserver
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
-from cyclesgym.envs.implementers import RotationPlanter
+from cyclesgym.envs.implementers import RotationPlanter, RotationPlanterFixedPlanting
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager
 from gym import spaces
 from typing import Tuple
@@ -39,9 +39,11 @@ class CropPlanning(CyclesEnv):
                          WEATHER_FILE='RockSprings.weather',
                          REINIT_FILE='N / A',
                          delta=365)
-        self._post_init_setup()
-        self._generate_action_space(len(rotation_crops))
         self.rotation_crops = rotation_crops
+        self._post_init_setup()
+        self.reset()
+        self._generate_observation_space()
+        self._generate_action_space(len(rotation_crops))
 
     def _generate_action_space(self, n_actions):
         self.action_space = spaces.MultiDiscrete([n_actions, 14, 10, 10])
@@ -49,9 +51,9 @@ class CropPlanning(CyclesEnv):
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=np.array(SoilNObserver.lower_bound, dtype=np.float32),
-            high=np.array(SoilNObserver.lower_bound, dtype=np.float32),
-            shape=SoilNObserver.lower_bound.shape,
+            low=np.array(self.observer.lower_bound, dtype=np.float32),
+            high=np.array(self.observer.lower_bound, dtype=np.float32),
+            shape=self.observer.lower_bound.shape,
             dtype=np.float32)
 
     def _init_input_managers(self):
@@ -136,3 +138,18 @@ class CropPlanning(CyclesEnv):
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
         return self.observer.compute_obs(self.date)
+
+
+class CropPlanningFixedPlanting(CropPlanning):
+
+    def _generate_action_space(self, n_actions):
+        self.action_space = spaces.MultiDiscrete([n_actions, 14])
+        self.n_actions = n_actions
+
+    def _init_implementer(self, *args, **kwargs):
+        self.implementer = RotationPlanterFixedPlanting(
+            operation_manager=self.op_manager,
+            operation_fname=self.op_file,
+            rotation_crops=self.rotation_crops,
+            start_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
+        )
