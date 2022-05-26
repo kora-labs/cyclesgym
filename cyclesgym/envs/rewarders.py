@@ -39,14 +39,7 @@ class CropRewarder(object):
         return harvest_dollars_per_hectare
     
     def compute_reward(self, date, delta, action=None):
-        rew = self._harvest_profit(date, delta, action=action)
-        """
-        if rew != 0:
-            print("Y")
-            print(rew)
-        """
-
-        return rew
+        return self._harvest_profit(date, delta, action=action)
 
 
 class NProfitabilityRewarder(object):
@@ -56,11 +49,6 @@ class NProfitabilityRewarder(object):
         assert Nkg_per_heactare >= 0, f'We cannot have negative fertilization'
         y, doy = date2ydoy(date)
         N_dollars_per_hectare = Nkg_per_heactare * N_price_dollars_per_kg[y]
-        """
-        if N_dollars_per_hectare != 0:
-            print("N")
-            print(N_dollars_per_hectare)
-        """
         return -N_dollars_per_hectare
 
 
