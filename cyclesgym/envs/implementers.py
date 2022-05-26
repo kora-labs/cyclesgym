@@ -424,16 +424,25 @@ class RotationPlanter(Planter):
                                               rotation_crops,
                                               start_year)
 
-    def convert_action_to_dict(self, crop_categorical, doy, end_doy, max_smc):
-        end_doy = int((doy+(1-doy)*end_doy) * 365)
-        doy = int(doy * 365)
-        max_smc = float(max_smc)
+    def convert_action_to_dict(self, crop_categorical: int, doy: int,
+                               end_doy: int, max_smc: int):
+        """crop_categorical: integer representing the crop in the crop rotation
+        doy: integer lower bound of the planting date, as number of weeks starting from the
+            first of march
+        end_doy: upper bound of the planting date, as number of weeks from the doy
+        max_smc: maximum moisture for automated planting"""
+
+        doy = 90 + doy * 7
+        end_doy = doy + end_doy * 7
+        max_smc = float(max_smc / 10)
+
         operation_det = {'DOY': doy,
                          'CROP': self.affected_crops[crop_categorical],
                          'END_DOY': end_doy,
                          'MAX_SMC': max_smc}
         return operation_det
 
-    def implement_action(self, date: datetime.date, crop_categorical: int, doy: float, END_DOY: float, MAX_SMC: float):
+    def implement_action(self, date: datetime.date, crop_categorical: int, doy: int,
+                         END_DOY: int, MAX_SMC: int):
         operation_det = self.convert_action_to_dict(crop_categorical, doy, END_DOY, MAX_SMC)
         return super(RotationPlanter, self).implement_action(date, operation_det)
