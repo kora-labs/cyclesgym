@@ -14,15 +14,15 @@ class CornSoilCropWeatherObs(Corn):
                  operation_file='ContinuousCorn.operation',
                  soil_file='GenericHagerstown.soil',
                  weather_file='RockSprings.weather',
-                 start_year=2015,
-                 end_year=2015,
+                 start_year=1980,
+                 end_year=1980,
                  use_reinit=True
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
         CyclesEnv.__init__(self, 
-                          SIMULATION_START_YEAR=2015,
-                         SIMULATION_END_YEAR=2015,
+                          SIMULATION_START_YEAR=1980,
+                         SIMULATION_END_YEAR=1980,
                          ROTATION_SIZE=1,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
