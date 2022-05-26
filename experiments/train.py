@@ -4,6 +4,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNorm
 # from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from stable_baselines3.common.vec_env import VecMonitor
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -18,6 +19,9 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 import sys
 
+from cyclesgym.dummy_policies import OpenLoopPolicy
+import expert
+
 
 class Train:
     """ Trainer object to wrap model training and handle environment creation, evaluation """
@@ -27,7 +31,7 @@ class Train:
         # rl config is configured from wandb config
 
 
-    def env_maker(self, training = True, n_procs = 4, soil_env = False):
+    def env_maker(self, training = True, n_procs = 1, soil_env = False):
         if not training:
             n_procs = 1
 
@@ -39,24 +43,26 @@ class Train:
                     env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'])
                 else:
                     env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'])
+                #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
             return _f
 
         env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
 
+        env = VecMonitor(env, 'runs')
+
         #only norm the reward if we selected to do so and if we are in training
         norm_reward = (training and self.config['norm_reward'])
 
         #high clipping values so that they effectively get ignored
-        env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=5000., clip_reward=5000.)
-        
-        env = VecMonitor(env, 'runs')
+        #env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=5000., clip_reward=5000.)
+
         return env
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=4, soil_env = self.config['soil_env'])
+        train_env = self.env_maker(training = True, n_procs=2, soil_env = self.config['soil_env'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
         elif config["method"] == "PPO":
@@ -83,6 +89,8 @@ class Train:
         # The test environment will automatically have the same observation normalization applied to it by 
         # EvalCallBack
         eval_env = self.env_maker(training = False, soil_env = self.config['soil_env'])
+        eval_env.training = False
+        eval_env.norm_reward=False
         eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
                              log_path='runs', eval_freq=config['eval_freq'],
                              deterministic=True, render=False)
@@ -92,7 +100,7 @@ class Train:
         callback = [WandbCallback(), eval_callback_det, eval_callback_sto]
         model.learn(total_timesteps=self.config["total_timesteps"], callback=WandbCallback())
         model.save(str(self.config['run_id'])+'.zip')
-        train_env.save(self.config['stats_path'])
+        #train_env.save(self.config['stats_path'])
         return model, eval_env
 
     def evaluate_log(self, model, eval_env):
@@ -114,6 +122,7 @@ class Train:
                                                                            env=eval_env,
                                                                            n_eval_episodes=1,
                                                                            deterministic=True)
+
         mean_r_stoc, std_r_stoc, actions_stoc, episode_rewards_stoc = _evaluate_policy(model,
                                                                                        env=eval_env,
                                                                                        n_eval_episodes=5,
@@ -138,7 +147,14 @@ class Train:
         wandb.log({'train/fertilizer': fertilizer_table})
         return mean_r_det
 
-
+    def eval_experts(self, action_series, eval_env, name):
+        action_series_int = np.array(action_series, dtype=int)
+        expert_policy = OpenLoopPolicy(action_series_int)
+        r, _, _, _= _evaluate_policy(expert_policy,
+                                eval_env,
+                                n_eval_episodes=1,
+                                deterministic=True)
+        wandb.log({f'train/baseline/'+name: r})
 
 if __name__ == '__main__':
 
@@ -147,9 +163,9 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps = 50000, eval_freq = 1000, run_id = 0,
+    config = dict(total_timesteps = 53*10, eval_freq = 100, run_id = 0,
                 norm_reward = False,  stats_path = 'runs/vec_normalize.pkl',
-                method = "DQN", n_actions = 11, soil_env=True)
+                method = "A2C", n_actions = 11, soil_env=True)
 
     wandb.init(
     config=config,
@@ -160,18 +176,42 @@ if __name__ == '__main__':
     )
 
     config = wandb.config
-
-    print(config)
     
     trainer = Train(config)
     model, eval_env = trainer.train()
     # Load the saved statistics
 
-    eval_env = VecNormalize.load(config['stats_path'], eval_env)
+    #eval_env = VecNormalize.load(config['stats_path'], eval_env)
     #  do not update moving averages at test time
     eval_env.training = False
     # reward normalization is not needed at test time
     eval_env.norm_reward = False
     
-    trainer.evaluate_log(model, eval_env)
+    #trainer.evaluate_log(model, eval_env)
+
+    agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
+                                         maxN=150,
+                                         n_actions=config['n_actions'],
+                                         delta_t=7)
+
+    nonsense_exact_sequence = expert.create_action_sequence(doy=[110, 155, 300], weight=[35, 120, 50],
+                                         maxN=150,
+                                         n_actions=config['n_actions'],
+                                         delta_t=7)
+
+    cycles_exact_sequence = expert.create_action_sequence(doy=110, weight=150,
+                                         maxN=150,
+                                         n_actions=config['n_actions'],
+                                         delta_t=7)
+
+    organic_exact_sequence = expert.create_action_sequence(doy=110, weight=0,
+                                         maxN=150,
+                                         n_actions=config['n_actions'],
+                                         delta_t=7)
+
+    trainer.eval_experts(organic_exact_sequence, eval_env, "organic")
+    trainer.eval_experts(agro_exact_sequence, eval_env, "agro")
+    trainer.eval_experts(cycles_exact_sequence, eval_env, "cycles")
+    
+    trainer.eval_experts(nonsense_exact_sequence, eval_env, "nonsense")
 

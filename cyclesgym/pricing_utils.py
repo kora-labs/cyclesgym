@@ -6,7 +6,7 @@ SOYBEAN_BUSHEL_PER_TONNE = 36.7437
 # Avg anhydrous ammonia cost in 2020 from
 # https://farmdocdaily.illinois.edu/2021/08/2021-fertilizer-price-increases-in-perspective-with-implications-for-2022-costs.html
 # Computed as 496 * 0.001 ($/ton * ton/kg)
-N_price_dollars_per_kg = {y: 496 * 0.001 for y in range(1980, 2020)}
+N_price_dollars_per_kg = {y: 0.001 for y in range(1980, 2020)}
 
 # Avg US price of corn for 2020 from
 # https://quickstats.nass.usda.gov/results/BA8CCB81-A2BB-3C5C-BD23-DBAC365C7832

@@ -24,7 +24,7 @@ class CropRewarder(object):
         # Did we harvest between this and previous time step?
         df = self.season_manager.season_df
         harverst_df = df.loc[(df['YEAR'] == y_prev) & (df['CROP'] == self.crop_name)]
-
+        #harvest on 244. plant on 110
         harvest_dollars_per_hectare = 0
         if not harverst_df.empty:
             harverst_doy = harverst_df.iloc[0]['DOY']
@@ -39,7 +39,14 @@ class CropRewarder(object):
         return harvest_dollars_per_hectare
     
     def compute_reward(self, date, delta, action=None):
-        return self._harvest_profit(date, delta, action=action)
+        rew = self._harvest_profit(date, delta, action=action)
+        """
+        if rew != 0:
+            print("Y")
+            print(rew)
+        """
+
+        return rew
 
 
 class NProfitabilityRewarder(object):
@@ -49,6 +56,11 @@ class NProfitabilityRewarder(object):
         assert Nkg_per_heactare >= 0, f'We cannot have negative fertilization'
         y, doy = date2ydoy(date)
         N_dollars_per_hectare = Nkg_per_heactare * N_price_dollars_per_kg[y]
+        """
+        if N_dollars_per_hectare != 0:
+            print("N")
+            print(N_dollars_per_hectare)
+        """
         return -N_dollars_per_hectare
 
 

@@ -14,15 +14,15 @@ class CornSoilCropWeatherObs(Corn):
                  operation_file='ContinuousCorn.operation',
                  soil_file='GenericHagerstown.soil',
                  weather_file='RockSprings.weather',
-                 start_year=1980,
-                 end_year=1980,
+                 start_year=2015,
+                 end_year=2015,
                  use_reinit=True
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
         CyclesEnv.__init__(self, 
-                          SIMULATION_START_YEAR=1980,
-                         SIMULATION_END_YEAR=1980,
+                          SIMULATION_START_YEAR=2015,
+                         SIMULATION_END_YEAR=2015,
                          ROTATION_SIZE=1,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
@@ -63,7 +63,7 @@ class CornSoilCropWeatherObs(Corn):
         self.soil_n_file = self._get_output_dir().joinpath('N.dat')
         self.soil_n_manager = SoilNManager(self.soil_n_file)
     
-    # Add observer of soild to compoud one
+    # Add observer of soil to compound one
     def _init_observer(self, *args, **kwargs):
         end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
         self.observer = observers.compound_observer([
