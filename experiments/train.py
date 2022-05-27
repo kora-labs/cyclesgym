@@ -40,11 +40,9 @@ class Train:
             # vectorized environment
             def _f():
                 if soil_env:
-                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = self.config['start_year'], end_year = self.config['start_year'])
+                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'])
                 else:
-                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = self.config['start_year'], end_year = self.config['start_year'])
+                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'])
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env

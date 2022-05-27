@@ -16,8 +16,3 @@ parameters:
 
   method:
     values: ["DQN", "A2C", "PPO"]
-
-  start_year: 
-    distribution: int_uniform
-    max: 2015
-    min: 1980
