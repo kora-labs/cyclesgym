@@ -100,11 +100,12 @@ class CropObserver(DailyOutputObserver):
     # Mapping to assign numeric values to plant life stage
     stage_mapping = \
         {'N/A': 0,
-         'PRE_EMERGENCE': 1,
-         'VEGETATIVE_GROWTH': 2,
-         'REPRODUCTIVE_GROWTH': 3,
-         'MATURITY': 4,
-         'KILLED': 5}
+         'PLANTING': 1,
+         'PRE_EMERGENCE': 2,
+         'VEGETATIVE_GROWTH': 3,
+         'REPRODUCTIVE_GROWTH': 4,
+         'MATURITY': 5,
+         'KILLED': 6}
 
     def __init__(self,
                  crop_manager: CropManager,
