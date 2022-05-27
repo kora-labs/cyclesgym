@@ -23,7 +23,7 @@ class Implementer(object):
     def _is_new_action(self, year: int, doy: int, *args, **kwargs) -> bool:
         raise NotImplementedError
 
-    def reset(self):
+    def reset(self) -> bool:
         raise NotImplementedError
 
     def _check_valid_action(self, action_details: dict):
@@ -165,7 +165,7 @@ class Fertilizer(Implementer):
         op = {key: op_val}
         return op
 
-    def reset(self):
+    def reset(self) -> bool:
         """
         Set to zero the masses for all the affected nutrients.
 
@@ -177,6 +177,8 @@ class Fertilizer(Implementer):
         overwrite.
         """
         doy = 1
+        rerun_cycles = False
+
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'FIXED_FERTILIZATION':
                 start_year = op_k[0]
@@ -187,7 +189,9 @@ class Fertilizer(Implementer):
                                                 mode='absolute')
                 self.operation_manager.insert_new_operations(
                     new_op, force=True)
+                rerun_cycles = True
         self.operation_manager.save(self.operation_fname)
+        return rerun_cycles
 
     def _check_collision(self, year, doy, operation_details):
         key = (year, doy, 'FERTILIZATION')
@@ -332,7 +336,7 @@ class Planter(Implementer):
         assert (action_details['CROP'] in self.valid_crops), f'You can only specify planting date for ' \
                                                              f'{self.valid_crops}'
 
-    def reset(self):
+    def reset(self) -> bool:
         """
         Set to zero the planting events of all the affected crops.
 
@@ -341,6 +345,7 @@ class Planter(Implementer):
         This is why we delete all the operations that involve planting affected
         crops
         """
+        rerun_cycles = True
         op_to_delete = []
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'PLANTING' and op_v['CROP'] in self.affected_crops:
@@ -348,6 +353,8 @@ class Planter(Implementer):
 
         self.operation_manager.delete_operations(op_to_delete)
         self.operation_manager.save(self.operation_fname)
+        # TODO: Understand when we can avoid rerunning cycles
+        return rerun_cycles
 
     def _get_operation_key(self, year, doy):
         return (year, doy, 'PLANTING')
