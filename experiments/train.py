@@ -34,25 +34,21 @@ class Train:
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                env = Corn(delta=7, n_actions=12, maxN=150, start_year=1980, end_year=1980)
-                #env = CropPlanningFixedPlanting(start_year=1980, end_year=1982,
-                #                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
+                #env = Corn(delta=7, n_actions=12, maxN=150, start_year=1980, end_year=1980)
+                env = CropPlanningFixedPlanting(start_year=1980, end_year=2000,
+                                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = gym.wrappers.RecordEpisodeStatistics(env)
+                env = Monitor(env)
+
+                norm_reward = (training and self.config['norm_reward'])
+                #env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
                 return env
 
             return _f
 
-        env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
-
-        # only norm the reward if we selected to do so and if we are in training
-        norm_reward = (training and self.config['norm_reward'])
-
-        env = Monitor(env, 'runs')
-        # high clipping values so that they effectively get ignored
-        env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
-
-        #env = VecMonitor(env, 'runs')
-        return env
+        #env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
+        #env = VecMonitor(env)
+        return make_env()()
 
     def train(self):
 
@@ -60,9 +56,7 @@ class Train:
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
         elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, n_steps=2,
-                        batch_size=64,
-                        n_epochs=10,
+            model = PPO('MlpPolicy', train_env, n_steps=20, batch_size=64, n_epochs=10,
                         verbose=config['verbose'], tensorboard_log=f"runs", device='cpu')
         elif config["method"] == "DQN":
             model = DQN('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
@@ -150,7 +144,7 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps=10, eval_freq=1, run_id=0,
+    config = dict(total_timesteps=3000, eval_freq=500, run_id=0,
                   norm_reward=True, stats_path='runs/vec_normalize.pkl',
                   method="PPO", verbose=1, n_process=8)
 
