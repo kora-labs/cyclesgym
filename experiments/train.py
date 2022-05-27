@@ -2,7 +2,7 @@ import time
 import numpy as np
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 # from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
-
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO, A2C, DQN
@@ -34,9 +34,9 @@ class Train:
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                #env = Corn(delta=7, n_actions=12, maxN=150, start_year=1980, end_year=1980)
-                env = CropPlanningFixedPlanting(start_year=1980, end_year=1982,
-                                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
+                env = Corn(delta=7, n_actions=12, maxN=150, start_year=1980, end_year=1980)
+                #env = CropPlanningFixedPlanting(start_year=1980, end_year=1982,
+                #                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
 
@@ -47,10 +47,11 @@ class Train:
         # only norm the reward if we selected to do so and if we are in training
         norm_reward = (training and self.config['norm_reward'])
 
+        env = Monitor(env, 'runs')
         # high clipping values so that they effectively get ignored
         env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
 
-        env = VecMonitor(env, 'runs')
+        #env = VecMonitor(env, 'runs')
         return env
 
     def train(self):
@@ -59,7 +60,10 @@ class Train:
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
         elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
+            model = PPO('MlpPolicy', train_env, n_steps=2,
+                        batch_size=64,
+                        n_epochs=10,
+                        verbose=config['verbose'], tensorboard_log=f"runs", device='cpu')
         elif config["method"] == "DQN":
             model = DQN('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
         else:
@@ -88,8 +92,8 @@ class Train:
         eval_callback_sto = EvalCallback(eval_env, best_model_save_path='./logs/',
                                          log_path='runs', eval_freq=config['eval_freq'],
                                          deterministic=False, render=False)
-        #callback = [WandbCallback(), eval_callback_det, eval_callback_sto]
-        model.learn(total_timesteps=self.config["total_timesteps"], callback=WandbCallback())
+        callback = [WandbCallback(), eval_callback_det, eval_callback_sto]
+        model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
         model.save(str(self.config['run_id']) + '.zip')
         train_env.save(self.config['stats_path'])
         return model, eval_env
@@ -153,7 +157,8 @@ if __name__ == '__main__':
     wandb.init(
         config=config,
         sync_tensorboard=True,
-        project="agro-rl",
+        project="experiments_crop_planning",
+        entity='koralabs',
         monitor_gym=True,  # automatically upload gym environements' videos
         save_code=True,
     )
