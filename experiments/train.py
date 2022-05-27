@@ -34,49 +34,36 @@ class Train:
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                #env = Corn(delta=7, n_actions=12, maxN=150, start_year=1980, end_year=1980)
                 env = CropPlanningFixedPlanting(start_year=1980, end_year=2000,
                                                 rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = gym.wrappers.RecordEpisodeStatistics(env)
-                env = Monitor(env)
-
-                norm_reward = (training and self.config['norm_reward'])
-                #env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
                 return env
 
             return _f
 
-        #env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
-        #env = VecMonitor(env)
-        return make_env()()
+        env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
+
+        norm_reward = (training and self.config['norm_reward'])
+        env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
+
+        env = VecMonitor(env)
+        return env
 
     def train(self):
-
         train_env = self.env_maker(training=True, n_procs=config['n_process'])
         if config["method"] == "A2C":
-            model = A2C('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
+            model = A2C('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs",
+                        device=config['device'])
         elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, n_steps=20, batch_size=64, n_epochs=10,
-                        verbose=config['verbose'], tensorboard_log=f"runs", device='cpu')
+            model = PPO('MlpPolicy', train_env, n_steps=config['n_steps'], batch_size=config['batch_size'],
+                        n_epochs=config['n_epochs'], verbose=config['verbose'], tensorboard_log=f"runs",
+                        device=config['device'])
         elif config["method"] == "DQN":
-            model = DQN('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs")
+            model = DQN('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs",
+                        device=config['device'])
         else:
             raise Exception("Not an RL method that has been implemented")
 
-        """
-        wandb_callback = WandbCallback(gradient_save_freq=0,  # 100,  # Don't save gradients
-                                       verbose=2,
-                                       model_save_path=WANDB_PATH.joinpath(
-                                           f'./runs/{run.id}'),
-                                       model_save_freq=20, )
-
-        eval_freq = self.config['eval_freq']
-        eval_callback_sto = EvalCallback_(self.env_maker(), eval_freq=eval_freq, deterministic=False,
-                                      n_eval_episodes=10)
-        eval_callback_det = EvalCallback_(self.env_maker(), eval_freq=eval_freq, deterministic=True,
-                                      n_eval_episodes=1)
-        callbacks = [eval_callback, wandb_callback]
-        """
         # The test environment will automatically have the same observation normalization applied to it by
         # EvalCallBack
         eval_env = self.env_maker(training=False)
@@ -144,9 +131,9 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps=3000, eval_freq=500, run_id=0,
+    config = dict(total_timesteps=100000, eval_freq=1000, n_steps=20, batch_size=64, n_epochs=10, run_id=0,
                   norm_reward=True, stats_path='runs/vec_normalize.pkl',
-                  method="PPO", verbose=1, n_process=8)
+                  method="PPO", verbose=1, n_process=1, device='auto')
 
     wandb.init(
         config=config,
@@ -171,5 +158,5 @@ if __name__ == '__main__':
     # reward normalization is not needed at test time
     eval_env.norm_reward = False
 
-    trainer.evaluate_log(model, eval_env)
+    #trainer.evaluate_log(model, eval_env)
 

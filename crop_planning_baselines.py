@@ -3,9 +3,6 @@ from cyclesgym.envs.crop_planning import CropPlanningFixedPlanting
 import unittest
 import shutil
 import subprocess
-
-from cyclesgym.managers import *
-from cyclesgym.utils import diff_pd
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 import time
 
@@ -34,7 +31,7 @@ class CropPlanningBaselines(object):
         start = time.time()
         rewards = []
         while True:
-            a = policy[year % 2]
+            a = policy[year]
             _, r, done, _ = env.step(a)
             rewards.append(r)
             year += 1
@@ -50,7 +47,7 @@ class CropPlanningBaselines(object):
         rotation_policy = [(1, 2), (0, 1)]*11
         only_soy = [(1, 2)]*21
         only_corn = [(0, 1)]*21
-        long_rotation = [(1, 2), (1, 2), (1, 2), (0, 1)]*7
+        long_rotation = [(1, 2), (1, 2), (1, 2), (1, 2), (0, 1)]*7
 
         crop_from_env_1, crop_from_env_2, rewards = self._test_policy(long_rotation)
         print(sum(rewards))
