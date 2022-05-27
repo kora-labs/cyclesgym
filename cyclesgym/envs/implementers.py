@@ -23,7 +23,7 @@ class Implementer(object):
     def _is_new_action(self, year: int, doy: int, *args, **kwargs) -> bool:
         raise NotImplementedError
 
-    def reset(self):
+    def reset(self) -> bool:
         raise NotImplementedError
 
     def _check_valid_action(self, action_details: dict):
@@ -165,7 +165,7 @@ class Fertilizer(Implementer):
         op = {key: op_val}
         return op
 
-    def reset(self):
+    def reset(self) -> bool:
         """
         Set to zero the masses for all the affected nutrients.
 
@@ -176,6 +176,8 @@ class Fertilizer(Implementer):
         fertilization event happening between t and t + delta that we could not
         overwrite.
         """
+        doy = 1
+        rerun_cycles = False
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'FIXED_FERTILIZATION':
                 start_year = op_k[0]
@@ -186,7 +188,9 @@ class Fertilizer(Implementer):
                                                 mode='absolute')
                 self.operation_manager.insert_new_operations(
                     new_op, force=True)
+                rerun_cycles = True
         self.operation_manager.save(self.operation_fname)
+        return rerun_cycles
 
     def _check_collision(self, year, doy, operation_details):
         key = (year, doy, 'FERTILIZATION')
@@ -331,7 +335,7 @@ class Planter(Implementer):
         assert (action_details['CROP'] in self.valid_crops), f'You can only specify planting date for ' \
                                                              f'{self.valid_crops}'
 
-    def reset(self):
+    def reset(self) -> bool:
         """
         Set to zero the planting events of all the affected crops.
 
@@ -340,6 +344,7 @@ class Planter(Implementer):
         This is why we delete all the operations that involve planting affected
         crops
         """
+        rerun_cycles = True
         op_to_delete = []
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'PLANTING' and op_v['CROP'] in self.affected_crops:
@@ -347,6 +352,8 @@ class Planter(Implementer):
 
         self.operation_manager.delete_operations(op_to_delete)
         self.operation_manager.save(self.operation_fname)
+        # TODO: Understand when we can avoid rerunning cycles
+        return rerun_cycles
 
     def _get_operation_key(self, year, doy):
         return (year, doy, 'PLANTING')
@@ -423,16 +430,25 @@ class RotationPlanter(Planter):
                                               rotation_crops,
                                               start_year)
 
-    def convert_action_to_dict(self, crop_categorical, doy, end_doy, max_smc):
-        end_doy = int((doy+(1-doy)*end_doy) * 365)
-        doy = int(doy * 365)
-        max_smc = float(max_smc)
+    def convert_action_to_dict(self, crop_categorical: int, doy: int,
+                               end_doy: int, max_smc: int):
+        """crop_categorical: integer representing the crop in the crop rotation
+        doy: integer lower bound of the planting date, as number of weeks starting from the
+            first of march
+        end_doy: upper bound of the planting date, as number of weeks from the doy
+        max_smc: maximum moisture for automated planting"""
+
+        doy = 90 + doy * 7
+        end_doy = doy + end_doy * 7
+        max_smc = float(max_smc / 10)
+
         operation_det = {'DOY': doy,
                          'CROP': self.affected_crops[crop_categorical],
                          'END_DOY': end_doy,
                          'MAX_SMC': max_smc}
         return operation_det
 
-    def implement_action(self, date: datetime.date, crop_categorical: int, doy: float, END_DOY: float, MAX_SMC: float):
+    def implement_action(self, date: datetime.date, crop_categorical: int, doy: int,
+                         END_DOY: int, MAX_SMC: int):
         operation_det = self.convert_action_to_dict(crop_categorical, doy, END_DOY, MAX_SMC)
         return super(RotationPlanter, self).implement_action(date, operation_det)
