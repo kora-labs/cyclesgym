@@ -40,9 +40,11 @@ class Train:
             # vectorized environment
             def _f():
                 if soil_env:
-                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'])
+                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                        start_year = self.config['start_year'], end_year = self.config['start_year'])
                 else:
-                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'])
+                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                        start_year = self.config['start_year'], end_year = self.config['start_year'])
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
@@ -56,13 +58,13 @@ class Train:
         norm_reward = (training and self.config['norm_reward'])
 
         #high clipping values so that they effectively get ignored
-        #env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=5000., clip_reward=5000.)
+        env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=5000., clip_reward=5000.)
 
         return env
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=2, soil_env = self.config['soil_env'])
+        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
         elif config["method"] == "PPO":
@@ -98,9 +100,9 @@ class Train:
                              log_path='runs', eval_freq=config['eval_freq'],
                              deterministic=False, render=False)
         callback = [WandbCallback(), eval_callback_det, eval_callback_sto]
-        model.learn(total_timesteps=self.config["total_timesteps"], callback=WandbCallback())
+        model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
         model.save(str(self.config['run_id'])+'.zip')
-        #train_env.save(self.config['stats_path'])
+        train_env.save(self.config['stats_path'])
         return model, eval_env
 
     def evaluate_log(self, model, eval_env):
@@ -163,9 +165,9 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps = 53*10, eval_freq = 100, run_id = 0,
-                norm_reward = False,  stats_path = 'runs/vec_normalize.pkl',
-                method = "A2C", n_actions = 11, soil_env=True)
+    config = dict(total_timesteps = 500000, eval_freq = 1000, run_id = 0,
+                norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
+                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980)
 
     wandb.init(
     config=config,
@@ -187,7 +189,7 @@ if __name__ == '__main__':
     # reward normalization is not needed at test time
     eval_env.norm_reward = False
     
-    #trainer.evaluate_log(model, eval_env)
+    trainer.evaluate_log(model, eval_env)
 
     agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
                                          maxN=150,
