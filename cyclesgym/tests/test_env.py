@@ -52,6 +52,8 @@ class TestCornEnv(unittest.TestCase):
         self._call_cycles(base_ctrl_man)
         crop_man = CropManager(
             CYCLES_PATH.joinpath('output', base_ctrl_man, 'CornRM.90.dat'))
+        season_man = SeasonManager(
+            CYCLES_PATH.joinpath('output', base_ctrl_man, 'season.dat'))
 
         # Start gym env
         operation_file = TEST_FILENAMES[2]
@@ -66,9 +68,16 @@ class TestCornEnv(unittest.TestCase):
             _, _, done, _ = env.step(a)
             if done:
                 break
+
+        # Check crop
         crop_output_file = env._get_output_dir().joinpath('CornRM.90.dat')
         crop_env = CropManager(crop_output_file)
         assert crop_env.crop_state.equals(crop_man.crop_state)
+
+        # Check yield
+        season_output_file = env._get_output_dir().joinpath('season.dat')
+        season_env = SeasonManager(season_output_file)
+        assert season_env.season_df.equals(season_man.season_df)
 
         # Run simulation with different management and compare
         env.reset()
@@ -81,6 +90,15 @@ class TestCornEnv(unittest.TestCase):
         crop_output_file = env._get_output_dir().joinpath('CornRM.90.dat')
         crop_env = CropManager(crop_output_file)
         assert not crop_env.crop_state.equals(crop_man.crop_state)
+
+        season_output_file = env._get_output_dir().joinpath('season.dat')
+        season_env = SeasonManager(season_output_file)
+        assert not season_env.season_df.equals(season_man.season_df)
+
+    def test_reward(self):
+        # Should test reward in no fertilization case to avoid old bug
+        pass
+
 
     @staticmethod
     def _call_cycles(ctrl):

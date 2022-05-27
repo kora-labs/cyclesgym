@@ -30,7 +30,7 @@ class CropRewarder(object):
             harverst_doy = harverst_df.iloc[0]['DOY']
             harvest_date = ydoy2date(y_prev, harverst_doy)
 
-            if previous_date <= harvest_date <= date:
+            if previous_date < harvest_date <= date:
                 # Compute harvest profit
                 dollars_per_tonne = self.dollars_per_tonne[y_prev]
                 harvest = float(harverst_df[self.yield_column])  # Metric tonne per hectar

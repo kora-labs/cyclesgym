@@ -44,10 +44,7 @@ class CropPlanning(CyclesEnv):
         self.rotation_crops = rotation_crops
 
     def _generate_action_space(self, n_actions):
-        self.action_space = spaces.Tuple((spaces.Discrete(n_actions,),
-                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1]),
-                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1]),
-                                          spaces.Box(low=np.float32(0), high=np.float32(1.0), shape=[1])))
+        self.action_space = spaces.MultiDiscrete([n_actions, 14, 10, 10])
         self.n_actions = n_actions
 
     def _generate_observation_space(self):
