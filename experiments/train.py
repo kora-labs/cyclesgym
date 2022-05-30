@@ -31,7 +31,7 @@ class Train:
         # rl config is configured from wandb config
 
 
-    def env_maker(self, training = True, n_procs = 1, soil_env = False):
+    def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980):
         if not training:
             n_procs = 1
 
@@ -40,9 +40,11 @@ class Train:
             # vectorized environment
             def _f():
                 if soil_env:
-                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'])
+                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                        start_year = start_year, end_year = end_year)
                 else:
-                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'])
+                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                        start_year = start_year, end_year = end_year)
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
@@ -62,7 +64,8 @@ class Train:
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'])
+        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
+         start_year = self.config['start_year'], end_year = self.config['end_year'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
         elif config["method"] == "PPO":
@@ -88,7 +91,8 @@ class Train:
         """
         # The test environment will automatically have the same observation normalization applied to it by 
         # EvalCallBack
-        eval_env = self.env_maker(training = False, soil_env = self.config['soil_env'])
+        eval_env = self.env_maker(training = False, soil_env = self.config['soil_env'],
+            start_year = self.config['start_year'], end_year = self.config['end_year'])
         eval_env.training = False
         eval_env.norm_reward=False
         eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
@@ -118,6 +122,7 @@ class Train:
         mean deterministic reward
 
         """
+        #list, list, numpy array, list
         mean_r_det, _, actions_det, episode_rewards_det = _evaluate_policy(model,
                                                                            env=eval_env,
                                                                            n_eval_episodes=1,
@@ -127,6 +132,12 @@ class Train:
                                                                                        env=eval_env,
                                                                                        n_eval_episodes=5,
                                                                                        deterministic=False)
+        print(actions_det.shape)
+        print(actions_stoc.shape)
+        print(episode_rewards_det)
+        print(episode_rewards_stoc)
+        T = actions_stoc.shape[1]
+        print(T)
         wandb.log({'deterministic_return': mean_r_det,
                    'stochastic_return_mean': mean_r_stoc,
                    'stochastic_return_std': std_r_stoc,
@@ -135,26 +146,35 @@ class Train:
                                  *list(f"stoc{i + 1}" for i in range(len(actions_stoc)))]
         episode_actions = [*actions_det, *actions_stoc]
         fertilizer_table = wandb.Table(
-            columns=['Run', 'Total Fertilizer', *[f'Week{i}' for i in range(53)]])
+            columns=['Run', 'Total Fertilizer', *[f'Week{i}' for i in range(T)]])
         for i in range(len(episode_actions)):
             acts = episode_actions[i]
-            data = [[week, fert] for (week, fert) in zip(range(53), acts)]
+            data = [[week, fert] for (week, fert) in zip(range(T), acts)]
             table = wandb.Table(data=data, columns=['Week', 'N added'])
             fertilizer_table.add_data(
                 *[episode_actions_names[i], np.sum(acts), *acts])
             wandb.log({f'train/actions/{episode_actions_names[i]}': wandb.plot.bar(table, 'Week', 'N added',
                                                                                    title=f'Training action sequence {episode_actions_names[i]}')})
         wandb.log({'train/fertilizer': fertilizer_table})
+
+        ## create a plot of the reward in each year
+        ## create a plot of fertilizer cost in each year
         return mean_r_det
 
     def eval_experts(self, action_series, eval_env, name):
         action_series_int = np.array(action_series, dtype=int)
         expert_policy = OpenLoopPolicy(action_series_int)
-        r, _, _, _= _evaluate_policy(expert_policy,
+        r, _, _, r_seq= _evaluate_policy(expert_policy,
                                 eval_env,
                                 n_eval_episodes=1,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
+        #wandb.log({f'train/baseline/'+name+'_rseq': r_seq})
+
+def make_multi_year(action_seq, n):
+    # n is an int for number of years
+    return np.concatenate([action_seq, np.repeat(action_seq[1:], n)])
+
 
 if __name__ == '__main__':
 
@@ -163,9 +183,10 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps = 500000, eval_freq = 1000, run_id = 0,
+    config = dict(total_timesteps = 0, eval_freq = 100, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
-                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980)
+                method = "A2C", n_actions = 11, soil_env=False, start_year = 1980,
+                end_year = 1980)
 
     wandb.init(
     config=config,
@@ -188,7 +209,7 @@ if __name__ == '__main__':
     eval_env.norm_reward = False
     
     trainer.evaluate_log(model, eval_env)
-
+    
     agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
                                          maxN=150,
                                          n_actions=config['n_actions'],
@@ -209,9 +230,16 @@ if __name__ == '__main__':
                                          n_actions=config['n_actions'],
                                          delta_t=7)
 
+    n = config['end_year'] - config['start_year']
+    agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
+    nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)
+    cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
+    organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
+
     trainer.eval_experts(organic_exact_sequence, eval_env, "organic")
     trainer.eval_experts(agro_exact_sequence, eval_env, "agro")
     trainer.eval_experts(cycles_exact_sequence, eval_env, "cycles")
     
     trainer.eval_experts(nonsense_exact_sequence, eval_env, "nonsense")
+    
 

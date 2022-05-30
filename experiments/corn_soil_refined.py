@@ -72,8 +72,9 @@ class CornSoilCropWeatherObs(Corn):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year)
                                            ])
-def CornSoilRefined(delta, n_actions, maxN):
-	large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN)
+def CornSoilRefined(delta, n_actions, maxN, start_year, end_year):
+	large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+     start_year = start_year, end_year=end_year)
 	s = large_obs_corn_env.reset()
 	large_obs_corn_env.observer.obs_names
 
@@ -93,7 +94,8 @@ def CornSoilRefined(delta, n_actions, maxN):
 	              'PROF SOIL NH4' # Soil profile ammonium-N content.
 	             ]
 	mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
-	smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN), mask=mask)
+	smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+        start_year = start_year, end_year=end_year), mask=mask)
 	return smart_obs_corn_env
 
 
