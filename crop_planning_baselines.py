@@ -26,7 +26,7 @@ class CropPlanningBaselines(object):
         self.custom_sim_id = lambda: '1'  # This way the output does not depend on time and can be deleted by teardown
 
     def _test_policy(self, policy):
-        env = CropPlanningFixedPlanting(start_year=1980, end_year=2000, rotation_crops=['CornRM.100',
+        env = CropPlanningFixedPlanting(start_year=2000, end_year=2016, rotation_crops=['CornRM.100',
                                                                                         'SoybeanMG.3'])
         env.reset()
         year = 0
@@ -34,7 +34,7 @@ class CropPlanningBaselines(object):
         start = time.time()
         rewards = []
         while True:
-            a = policy[year % 2]
+            a = policy[year]
             _, r, done, _ = env.step(a)
             rewards.append(r)
             year += 1
