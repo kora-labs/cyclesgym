@@ -57,3 +57,11 @@ class WeatherManager(InputFileManager):
 
     def get_day(self, year, doy):
         return self.mutables.loc[(self.mutables['YEAR'] == year) & (self.mutables['DOY'] == doy)]
+
+    @classmethod
+    def from_df(cls, immutables_df, mutables_df):
+        # TODO: Perform sanity checks on df
+        manager = cls(fname=None)
+        manager.immutables = immutables_df.copy()
+        manager.mutables = mutables_df.copy()
+        return manager
