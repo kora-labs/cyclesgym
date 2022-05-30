@@ -125,9 +125,17 @@ def adapt_weather_year(weather_manager: WeatherManager,
         # Set target year
         o_y_df['YEAR'] = t_y
 
+    # TODO: This can probably be done in a much smarter way
+    # Cast doy as integer because intepreted as float in last_week_average
+    new_grouped_by_year = []
+
+    for year, year_df in grouped_by_year:
+        year_df = year_df.astype({'YEAR': int, 'DOY': int})
+        new_grouped_by_year.append((year, year_df))
+
     # Create mutable weather df from  adapted years
     adapted_weather_df = pd.concat(
-        [element[1] for element in grouped_by_year], ignore_index=True)
+        [element[1] for element in new_grouped_by_year], ignore_index=True)
 
     return WeatherManager.from_df(immutables_df=imm_df,
                                   mutables_df=adapted_weather_df)
