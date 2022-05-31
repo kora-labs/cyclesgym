@@ -4,6 +4,11 @@ from cyclesgym.envs.observers import compound_observer, CropObserver, \
     WeatherObserver, NToDateObserver
 from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
     NProfitabilityRewarder
+from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
+from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.envs.weather_generator import generate_random_weather
+import os
+
 from cyclesgym.envs.implementers import *
 import pathlib
 import shutil
@@ -136,7 +141,8 @@ class Corn(CyclesEnv):
             self._update_operation_file()
             self.implementer.start_year = self.reinit_year + 1
 
-        self.season_manager.update_file(self.season_file)
+        self._update_output_managers()
+
         # Compute reward
         r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
@@ -229,3 +235,160 @@ class Corn(CyclesEnv):
     def _check_is_mid_year(self):
         year_of_next_step = (self.date + timedelta(days=self.delta)).year
         return (year_of_next_step > self.reinit_year and self.date.year == self.reinit_year)
+
+
+class CornShuffledWeather(Corn):
+    def __init__(self, delta,
+                 n_actions,
+                 maxN,
+                 sampling_start_year,
+                 sampling_end_year,
+                 operation_file='ContinuousCorn.operation',
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather',
+                 start_year=1980,
+                 end_year=1980,
+                 use_reinit=True,
+                 n_weather_samples=10,
+                 ):
+        """
+
+        Parameters
+        ----------
+        delta: int
+            Time step in days
+        n_actions: int
+            Number of discrete actions
+        maxN: int
+            Maximum Nitrogen that can be provided in one step. We have
+            n_actions equally spaced in [0, maxN]
+        sampling_start_year: int
+            Lower end of the year range to sample the weather
+        sampling_end_year: int
+            Upper end of the year range to sample the weather (included for
+            consistency with start year)
+        operation_file: str
+            Base operation file
+        soil_file: str
+            Base soil file
+        weather_file: str
+            Base weather file
+        start_year: int
+            Year to start the simulation from
+        end_year:
+            Year to end the simulation at (included)
+        use_reinit: bool
+            If true, speeds up multi-year simulation by using the reinit option
+            of Cycles
+        n_weather_samples: int
+            Number of different weather samples
+        """
+        super().__init__(delta,
+                         n_actions,
+                         maxN,
+                         operation_file=operation_file,
+                         soil_file=soil_file,
+                         weather_file=weather_file,
+                         start_year=start_year,
+                         end_year=end_year,
+                         use_reinit=use_reinit)
+
+        # Store sampling related variables
+        self.n_weather_samples = n_weather_samples
+        self.sampling_start_year = sampling_start_year
+        self.sampling_end_year = sampling_end_year
+
+        # Create directory to store weather
+        # TODO: Rename create_sim_id if used here as well
+        self.env_id = create_sim_id()
+        self.weather_temporary_directory = MyTemporaryDirectory(
+            path=self._get_weather_dir())
+
+        # Generate weather files by reshuffling
+        self._generate_weather()
+
+    def _get_weather_dir(self):
+        # Get directory where sampled weather is stored
+        return CYCLES_PATH.joinpath('input', f'weather_{self.env_id}')
+
+    def _generate_weather(self):
+        # Get weather base data
+        fname = CYCLES_PATH.joinpath(
+            'input',  self.ctrl_base_manager.ctrl_dict['WEATHER_FILE'])
+        base_manager = WeatherManager(fname)
+
+        # Restrict weather data to sampling years
+        mutables = base_manager.mutables
+        valid_years = np.asarray(mutables['YEAR'].unique())
+
+        if self.sampling_start_year < valid_years.min():
+            raise ValueError(f'Sampling start year {self.sampling_start_year}'
+                             f'is too low. It should be at least '
+                             f'{valid_years.min()}')
+
+        if self.sampling_end_year > valid_years.max():
+            raise ValueError(f'Sampling end year {self.sampling_end_year}'
+                             f'is too high. It should be at most '
+                             f'{valid_years.max()}')
+
+        sampling_years = np.arange(self.sampling_start_year,
+                                   self.sampling_end_year + 1)
+
+        base_manager.mutables = mutables.loc[mutables['YEAR'].isin(sampling_years)]
+
+        # Get simulation year range
+        sim_start_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_START_YEAR']
+        sim_end_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_END_YEAR']
+        target_year_range = np.arange(sim_start_year,
+                                      sim_end_year + 1)
+
+        # Get shuffled weather
+        new_weather_list = generate_random_weather(
+            weather_manager=base_manager,
+            duration=self.rotation_size,
+            n_samples=self.n_weather_samples,
+            target_year_range=target_year_range)
+
+        # Save shuffled weather
+        for i, m in enumerate(new_weather_list):
+            m.save(self._get_weather_dir().joinpath(f'weather{i}.weather'))
+
+    def _sample_weather_file(self):
+        # Get the file name of one of the sampled weather files
+        return self._get_weather_dir().joinpath(
+            f'weather{np.random.choice(self.n_weather_samples)}.weather')
+
+    def _create_weather_input_file(self):
+        # Symlink to one of the sampled weather files
+        src = self._sample_weather_file()
+        dest = self.input_dir.name.joinpath('weather.weather')
+        self.weather_input_file = dest
+        os.symlink(src, dest)
+
+
+if __name__ == '__main__':
+    env = CornShuffledWeather(delta=7,
+                              n_actions=11,
+                              maxN=150,
+                              start_year=1980,
+                              end_year=1980,
+                              sampling_start_year=1980,
+                              sampling_end_year=2013,
+                              n_weather_samples=100,
+                              )
+    n_trials = 10
+    rewards = np.zeros(n_trials)
+
+    for i in range(n_trials):
+        s = env.reset()
+        week = 0
+        while True:
+            a = 10 if week == 15 else 0
+            s, r, done, info = env.step(a)
+            rewards[i] += r
+            week += 1
+            if done:
+                break
+    print(rewards)
