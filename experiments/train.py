@@ -8,8 +8,8 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.callbacks import EvalCallback
-
+from cyclesgym.utils import EvalCallbackCustom
+from pathlib import Path
 from eval import _evaluate_policy
 import gym
 from cyclesgym.envs.corn import Corn
@@ -26,7 +26,8 @@ class Train:
         self.config = experiment_config
         # rl config is configured from wandb config
 
-    def env_maker(self, training=True, n_procs=4, start_year=1980, end_year=2000):
+    def env_maker(self, training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
+                  weather_file='RockSprings.weather'):
         if not training:
             n_procs = 1
 
@@ -34,8 +35,8 @@ class Train:
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                env = CropPlanningFixedPlanting(start_year=start_year, end_year=end_year,
-                                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
+                env = CropPlanningFixedPlanting(start_year=start_year, end_year=end_year, soil_file=soil_file,
+                                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
 
@@ -53,15 +54,17 @@ class Train:
         train_env = self.env_maker(start_year=self.config['train_start_year'],
                                    end_year=self.config['train_end_year'],
                                    training=True, n_procs=self.config['n_process'])
+        dir = wandb.run.dir
+        model_dir = Path(dir).joinpath('models')
         if self.config["method"] == "A2C":
-            model = A2C('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=f"runs",
+            model = A2C('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=dir,
                         device=self.config['device'])
         elif self.config["method"] == "PPO":
             model = PPO('MlpPolicy', train_env, n_steps=self.config['n_steps'], batch_size=self.config['batch_size'],
-                        n_epochs=self.config['n_epochs'], verbose=self.config['verbose'], tensorboard_log=f"runs",
+                        n_epochs=self.config['n_epochs'], verbose=self.config['verbose'], tensorboard_log=dir,
                         device=self.config['device'])
         elif self.config["method"] == "DQN":
-            model = DQN('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=f"runs",
+            model = DQN('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=dir,
                         device=self.config['device'])
         else:
             raise Exception("Not an RL method that has been implemented")
@@ -77,21 +80,49 @@ class Train:
                                             end_year=self.config['eval_end_year'],
                                             training=False)
 
-        eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/', log_path='runs',
-                                         eval_freq=eval_freq, deterministic=True, render=False)
-        eval_callback_sto = EvalCallback(eval_env, best_model_save_path='./logs/', log_path='runs',
+        eval_env_other_loc = self.env_maker(start_year=self.config['train_start_year'],
+                                            end_year=self.config['eval_end_year']-1,
+                                            weather_file='NewHolland.weather',
+                                            training=False)
+
+        eval_callback_det = EvalCallbackCustom(eval_env_train, best_model_save_path=str(model_dir.joinpath('eval_det')),
+                                         log_path=str(model_dir.joinpath('eval_det')),
+                                         eval_freq=eval_freq, deterministic=True, render=False,
+                                               eval_prefix='eval_det')
+        eval_callback_sto = EvalCallbackCustom(eval_env_train, best_model_save_path=str(model_dir.joinpath('eval_sto')),
+                                         log_path=str(model_dir.joinpath('eval_sto')),
                                          eval_freq=int(self.config['eval_freq'] / self.config['n_process']),
-                                         deterministic=False, render=False)
+                                         deterministic=False, render=False,
+                                               eval_prefix='eval_sto')
 
-        eval_callback_det_new_years = EvalCallback(eval_env_new_years, best_model_save_path='./logs/', log_path='runs',
-                                                   eval_freq=eval_freq, deterministic=True, render=False)
-        eval_callback_sto_new_years = EvalCallback(eval_env_new_years, best_model_save_path='./logs/',
-                                                   log_path='runs', eval_freq=eval_freq, deterministic=False,
-                                                   render=False)
+        eval_callback_det_new_years = EvalCallbackCustom(eval_env_new_years,
+                                                   best_model_save_path=str(model_dir.joinpath('eval_det_new_years')),
+                                                   log_path=str(model_dir.joinpath('eval_det_new_years')),
+                                                   eval_freq=eval_freq, deterministic=True, render=False,
+                                                         eval_prefix='eval_det_new_years'
+                                                         )
+        eval_callback_sto_new_years = EvalCallbackCustom(eval_env_new_years,
+                                                   best_model_save_path=str(model_dir.joinpath('eval_sto_new_years')),
+                                                   log_path=str(model_dir.joinpath('eval_sto_new_years')),
+                                                   eval_freq=eval_freq, deterministic=False,
+                                                   render=False,
+                                                         eval_prefix='eval_sto_new_years')
 
-        callback = [WandbCallback(model_save_path='runs',
+        eval_callback_det_other_loc = EvalCallbackCustom(eval_env_other_loc,
+                                                   best_model_save_path=str(model_dir.joinpath('eval_det_other_loc')),
+                                                   log_path=str(model_dir.joinpath('eval_det_other_loc')),
+                                                   eval_freq=eval_freq, deterministic=True, render=False,
+                                                         eval_prefix='eval_det_other_loc')
+        eval_callback_sto_other_loc = EvalCallbackCustom(eval_env_other_loc,
+                                                   best_model_save_path=str(model_dir.joinpath('eval_sto_other_loc')),
+                                                   log_path=str(model_dir.joinpath('eval_sto_other_loc')),
+                                                   eval_freq=eval_freq, deterministic=False,
+                                                   render=False, eval_prefix='eval_sto_other_loc')
+
+        callback = [WandbCallback(model_save_path=str(model_dir),
                                   model_save_freq=int(self.config['eval_freq'] / self.config['n_process'])),
-                    eval_callback_det, eval_callback_sto, eval_callback_det_new_years, eval_callback_sto_new_years]
+                    eval_callback_det, eval_callback_sto, eval_callback_det_new_years, eval_callback_sto_new_years,
+                    eval_callback_det_other_loc, eval_callback_sto_other_loc]
         model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
 
         return model, eval_env
@@ -150,8 +181,7 @@ if __name__ == '__main__':
 
     config = dict(train_start_year=1980, train_end_year=1998, eval_start_year=1998, eval_end_year=2016,
                   total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
-                  norm_reward=True, stats_path='runs/vec_normalize.pkl',
-                  method="PPO", verbose=1, n_process=8, device='auto')
+                  norm_reward=True, method="PPO", verbose=1, n_process=8, device='cpu')
 
     wandb.init(
         config=config,

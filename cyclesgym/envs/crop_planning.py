@@ -13,7 +13,7 @@ from pathlib import Path
 
 class CropPlanning(CyclesEnv):
     def __init__(self, start_year, end_year, rotation_crops, soil_file='GenericHagerstown.soil',
-                         weather_file='RockSprings.weather',):
+                         weather_file='RockSprings.weather'):
         super().__init__(SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
                          ROTATION_SIZE=end_year-start_year,
