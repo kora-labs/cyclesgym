@@ -6,7 +6,7 @@ from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
     NProfitabilityRewarder
 from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 from cyclesgym.paths import CYCLES_PATH
-from cyclesgym.envs.weather_generator import generate_random_weather
+from cyclesgym.envs.weather_generator import generate_random_weather, WeatherShuffler
 import os
 
 from cyclesgym.envs.implementers import *
@@ -368,27 +368,125 @@ class CornShuffledWeather(Corn):
         os.symlink(src, dest)
 
 
+class CornShuffledWeatherNew(Corn):
+    def __init__(self, delta,
+                 n_actions,
+                 maxN,
+                 sampling_start_year,
+                 sampling_end_year,
+                 operation_file='ContinuousCorn.operation',
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather',
+                 start_year=1980,
+                 end_year=1980,
+                 use_reinit=True,
+                 n_weather_samples=10,
+                 ):
+        """
+        Parameters
+        ----------
+        delta: int
+            Time step in days
+        n_actions: int
+            Number of discrete actions
+        maxN: int
+            Maximum Nitrogen that can be provided in one step. We have
+            n_actions equally spaced in [0, maxN]
+        sampling_start_year: int
+            Lower end of the year range to sample the weather
+        sampling_end_year: int
+            Upper end of the year range to sample the weather (included for
+            consistency with start year)
+        operation_file: str
+            Base operation file
+        soil_file: str
+            Base soil file
+        weather_file: str
+            Base weather file
+        start_year: int
+            Year to start the simulation from
+        end_year:
+            Year to end the simulation at (included)
+        use_reinit: bool
+            If true, speeds up multi-year simulation by using the reinit option
+            of Cycles
+        n_weather_samples: int
+            Number of different weather samples
+        """
+        super().__init__(delta,
+                         n_actions,
+                         maxN,
+                         operation_file=operation_file,
+                         soil_file=soil_file,
+                         weather_file=weather_file,
+                         start_year=start_year,
+                         end_year=end_year,
+                         use_reinit=use_reinit)
+
+        # Create weather generator
+        base_weather_file = CYCLES_PATH.joinpath(
+            'input', self.ctrl_base_manager.ctrl_dict['WEATHER_FILE'])
+
+        sim_start_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_START_YEAR']
+        sim_end_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_END_YEAR']
+        target_year_range = np.arange(sim_start_year,
+                                      sim_end_year + 1)
+
+        self.weather_generator = WeatherShuffler(
+            n_weather_samples=n_weather_samples,
+            sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year,
+            base_weather_file=base_weather_file,
+            target_year_range=target_year_range
+        )
+
+        # Generate weather files by reshuffling
+        self.weather_generator.generate_weather()
+
+    def _create_weather_input_file(self):
+        # Symlink to one of the sampled weather files
+        src = self.weather_generator.sample_weather_path()
+        dest = self.input_dir.name.joinpath('weather.weather')
+        self.weather_input_file = dest
+        os.symlink(src, dest)
+
+
 if __name__ == '__main__':
-    env = CornShuffledWeather(delta=7,
-                              n_actions=11,
-                              maxN=150,
-                              start_year=1980,
-                              end_year=1980,
-                              sampling_start_year=1980,
-                              sampling_end_year=2013,
-                              n_weather_samples=100,
-                              )
+    np.random.seed(0)
+    env_kwargs = dict(delta=7, n_actions=11, maxN=150, start_year=1980,
+                      end_year=1980, sampling_start_year=1980,
+                      sampling_end_year=2013, n_weather_samples=100, )
     n_trials = 10
-    rewards = np.zeros(n_trials)
+    np.random.seed(0)
+    env_new = CornShuffledWeatherNew(**env_kwargs)
+    rewards_new = np.zeros(n_trials)
 
     for i in range(n_trials):
-        s = env.reset()
+        s = env_new.reset()
         week = 0
         while True:
             a = 10 if week == 15 else 0
-            s, r, done, info = env.step(a)
-            rewards[i] += r
+            s, r, done, info = env_new.step(a)
+            rewards_new[i] += r
             week += 1
             if done:
                 break
-    print(rewards)
+
+    np.random.seed(0)
+    env_old = CornShuffledWeather(**env_kwargs)
+    rewards_old = np.zeros(n_trials)
+
+    for i in range(n_trials):
+        s = env_old.reset()
+        week = 0
+        while True:
+            a = 10 if week == 15 else 0
+            s, r, done, info = env_old.step(a)
+            rewards_old[i] += r
+            week += 1
+            if done:
+                break
+    print(rewards_new)
+    print(rewards_old)

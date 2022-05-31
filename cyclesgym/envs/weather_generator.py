@@ -4,12 +4,112 @@ import random
 import calendar
 import numpy as np
 from pathlib import Path
+from abc import ABC, abstractmethod
 
-
+from cyclesgym.paths import CYCLES_PATH
 from cyclesgym.managers import WeatherManager
-from cyclesgym.envs.utils import MyTemporaryDirectory
+from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 
-__all__ = ['shuffle_weather', 'adapt_weather_year', 'generate_random_weather']
+__all__ = ['shuffle_weather', 'adapt_weather_year', 'generate_random_weather',
+           'WeatherShuffler']
+
+
+class WeatherGenerator(ABC):
+    def __init__(self):
+        # TODO: Rename create_sim_id if used here as well
+        self.generator_id = create_sim_id()
+        self.weather_temporary_directory = MyTemporaryDirectory(
+            path=self._get_weather_dir())
+        self.weather_list = []
+
+    def _get_weather_dir(self):
+        # Get directory where sampled weather is stored
+        return CYCLES_PATH.joinpath('input', f'weather_{self.generator_id}')
+
+    def sample_weather_path(self):
+        return self._get_weather_dir().joinpath(
+            np.random.choice(self.weather_list))
+
+    @abstractmethod
+    def generate_weather(self, *args, **kwargs):
+        """
+        Popoulate the weather directory with files and weather list with paths.
+        """
+        pass
+
+
+class WeatherShuffler(WeatherGenerator):
+    def __init__(self,
+                 n_weather_samples: int,
+                 sampling_start_year: int,
+                 sampling_end_year: int,
+                 base_weather_file: Path,
+                 target_year_range: Sequence[int]):
+        """
+        Generate random weather conditions by shuffling years from base file.
+
+        Parameters
+        ----------
+        sampling_start_year: int
+            Lower end of the year range to sample the weather
+        sampling_end_year: int
+            Upper end of the year range to sample the weather (included for
+            consistency with start year)
+         n_weather_samples: int
+            Number of different weather samples
+        base_manager: Path
+            Path to weather file containing the base weather data to shuffle
+        target_year_range: Sequence[int]
+            Year range for the generated weather
+        """
+        # Store sampling related variables
+        self.n_weather_samples = n_weather_samples
+        self.sampling_start_year = sampling_start_year
+        self.sampling_end_year = sampling_end_year
+        self.base_weather_file = base_weather_file
+        self.target_year_range = np.asarray(target_year_range)
+
+        super().__init__()
+
+
+    def generate_weather(self):
+        # Get weather base data
+        base_manager = WeatherManager(self.base_weather_file)
+
+        # Restrict weather data to sampling years
+        mutables = base_manager.mutables
+        valid_years = np.asarray(mutables['YEAR'].unique())
+
+        if self.sampling_start_year < valid_years.min():
+            raise ValueError(f'Sampling start year {self.sampling_start_year}'
+                             f'is too low. It should be at least '
+                             f'{valid_years.min()}')
+
+        if self.sampling_end_year > valid_years.max():
+            raise ValueError(f'Sampling end year {self.sampling_end_year}'
+                             f'is too high. It should be at most '
+                             f'{valid_years.max()}')
+
+        sampling_years = np.arange(self.sampling_start_year,
+                                   self.sampling_end_year + 1)
+
+        base_manager.mutables = mutables.loc[mutables['YEAR'].isin(
+            sampling_years)]
+
+        duration = self.target_year_range.max() - self.target_year_range.min() + 1
+
+        # Get shuffled weather
+        new_weather_list = generate_random_weather(
+            weather_manager=base_manager,
+            duration=duration,
+            n_samples=self.n_weather_samples,
+            target_year_range=self.target_year_range)
+
+        # Save shuffled weather
+        for i, m in enumerate(new_weather_list):
+            weather_fname = f'weather{i}.weather'
+            self.weather_list.append(weather_fname)
+            m.save(self._get_weather_dir().joinpath(weather_fname))
 
 
 def shuffle_weather(weather_manager: WeatherManager,
