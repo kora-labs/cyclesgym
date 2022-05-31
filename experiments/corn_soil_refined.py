@@ -21,9 +21,9 @@ class CornSoilCropWeatherObs(Corn):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
         CyclesEnv.__init__(self, 
-                          SIMULATION_START_YEAR=1980,
-                         SIMULATION_END_YEAR=1980,
-                         ROTATION_SIZE=1,
+                          SIMULATION_START_YEAR=start_year,
+                         SIMULATION_END_YEAR=end_year,
+                         ROTATION_SIZE=self.rotation_size,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
                          HOURLY_INFILTRATION=1,
@@ -62,7 +62,9 @@ class CornSoilCropWeatherObs(Corn):
         super()._init_output_managers()
         self.soil_n_file = self._get_output_dir().joinpath('N.dat')
         self.soil_n_manager = SoilNManager(self.soil_n_file)
-    
+        self.output_managers.append(self.soil_n_manager)
+        self.output_files.append(self.soil_n_file)
+
     # Add observer of soil to compound one
     def _init_observer(self, *args, **kwargs):
         end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -72,9 +74,12 @@ class CornSoilCropWeatherObs(Corn):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year)
                                            ])
-def CornSoilRefined(delta, n_actions, maxN, start_year, end_year):
-	large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-     start_year = start_year, end_year=end_year)
+
+
+def CornSoilRefined(delta, n_actions, maxN, **kwargs):
+	large_obs_corn_env = CornSoilCropWeatherObs(
+        delta=delta, n_actions=n_actions, maxN=maxN, **kwargs)
+
 	s = large_obs_corn_env.reset()
 	large_obs_corn_env.observer.obs_names
 
@@ -94,8 +99,10 @@ def CornSoilRefined(delta, n_actions, maxN, start_year, end_year):
 	              'PROF SOIL NH4' # Soil profile ammonium-N content.
 	             ]
 	mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
-	smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-        start_year = start_year, end_year=end_year), mask=mask)
+
+	smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(
+        delta=delta, n_actions=n_actions, maxN=maxN, **kwargs), mask=mask)
+
 	return smart_obs_corn_env
 
 
