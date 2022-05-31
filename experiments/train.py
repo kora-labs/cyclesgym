@@ -50,40 +50,47 @@ class Train:
         return env
 
     def train(self):
-        train_env = self.env_maker(training=True, n_procs=config['n_process'])
-        if config["method"] == "A2C":
-            model = A2C('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs",
-                        device=config['device'])
-        elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, n_steps=config['n_steps'], batch_size=config['batch_size'],
-                        n_epochs=config['n_epochs'], verbose=config['verbose'], tensorboard_log=f"runs",
-                        device=config['device'])
-        elif config["method"] == "DQN":
-            model = DQN('MlpPolicy', train_env, verbose=config['verbose'], tensorboard_log=f"runs",
-                        device=config['device'])
+        train_env = self.env_maker(start_year=self.config['train_start_year'],
+                                   end_year=self.config['train_end_year'],
+                                   training=True, n_procs=self.config['n_process'])
+        if self.config["method"] == "A2C":
+            model = A2C('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=f"runs",
+                        device=self.config['device'])
+        elif self.config["method"] == "PPO":
+            model = PPO('MlpPolicy', train_env, n_steps=self.config['n_steps'], batch_size=self.config['batch_size'],
+                        n_epochs=self.config['n_epochs'], verbose=self.config['verbose'], tensorboard_log=f"runs",
+                        device=self.config['device'])
+        elif self.config["method"] == "DQN":
+            model = DQN('MlpPolicy', train_env, verbose=self.config['verbose'], tensorboard_log=f"runs",
+                        device=self.config['device'])
         else:
             raise Exception("Not an RL method that has been implemented")
 
         # The test environment will automatically have the same observation normalization applied to it by
         # EvalCallBack
-        eval_env = self.env_maker(training=False)
-        eval_env_new_years = self.env_maker(training=False, start_year=2000, end_year=2016)
-        eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
-                                         log_path='runs', eval_freq=int(config['eval_freq'] / config['n_process']),
-                                         deterministic=True, render=False)
-        eval_callback_sto = EvalCallback(eval_env, best_model_save_path='./logs/',
-                                         log_path='runs', eval_freq=int(config['eval_freq'] / config['n_process']),
+        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
+        eval_env_train = self.env_maker(start_year=self.config['train_start_year'],
+                                        end_year=self.config['train_end_year'],
+                                        training=False)
+
+        eval_env_new_years = self.env_maker(start_year=self.config['eval_start_year'],
+                                            end_year=self.config['eval_end_year'],
+                                            training=False)
+
+        eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/', log_path='runs',
+                                         eval_freq=eval_freq, deterministic=True, render=False)
+        eval_callback_sto = EvalCallback(eval_env, best_model_save_path='./logs/', log_path='runs',
+                                         eval_freq=int(self.config['eval_freq'] / self.config['n_process']),
                                          deterministic=False, render=False)
 
-        eval_callback_det_new_years = EvalCallback(eval_env_new_years, best_model_save_path='./logs/',
-                                         log_path='runs', eval_freq=int(config['eval_freq'] / config['n_process']),
-                                         deterministic=True, render=False)
+        eval_callback_det_new_years = EvalCallback(eval_env_new_years, best_model_save_path='./logs/', log_path='runs',
+                                                   eval_freq=eval_freq, deterministic=True, render=False)
         eval_callback_sto_new_years = EvalCallback(eval_env_new_years, best_model_save_path='./logs/',
-                                         log_path='runs', eval_freq=int(config['eval_freq'] / config['n_process']),
-                                         deterministic=False, render=False)
+                                                   log_path='runs', eval_freq=eval_freq, deterministic=False,
+                                                   render=False)
 
         callback = [WandbCallback(model_save_path='runs',
-                                  model_save_freq=int(config['eval_freq'] / config['n_process'])),
+                                  model_save_freq=int(self.config['eval_freq'] / self.config['n_process'])),
                     eval_callback_det, eval_callback_sto, eval_callback_det_new_years, eval_callback_sto_new_years]
         model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
 
@@ -141,7 +148,8 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
+    config = dict(train_start_year=1980, train_end_year=1998, eval_start_year=1998, eval_end_year=2016,
+                  total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
                   norm_reward=True, stats_path='runs/vec_normalize.pkl',
                   method="PPO", verbose=1, n_process=8, device='auto')
 
