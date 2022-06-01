@@ -33,7 +33,7 @@ class Train:
 
     def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
-        n_weather_samples=100):
+        n_weather_samples=100, fixed_weather = True):
         if not training:
             n_procs = 1
 
@@ -46,13 +46,19 @@ class Train:
                         start_year = start_year, end_year = end_year,
                         sampling_start_year=sampling_start_year,
                         sampling_end_year=sampling_end_year,
-                        n_weather_samples=n_weather_samples)
+                        n_weather_samples=n_weather_samples,
+                        fixed_weather=fixed_weather)
                 else:
-                    env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = start_year, end_year = end_year,
-                        sampling_start_year=sampling_start_year,
-                        sampling_end_year=sampling_end_year,
-                        n_weather_samples=n_weather_samples)
+                    if fixed_weather:
+                        env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                            start_year = start_year, end_year = end_year,
+                            sampling_start_year=sampling_start_year,
+                            sampling_end_year=sampling_end_year,
+                            n_weather_samples=n_weather_samples)
+                    else:
+                        env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                            start_year = start_year, end_year = end_year)
+
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
@@ -72,11 +78,12 @@ class Train:
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
+        train_env = self.env_maker(training = True, n_procs=1, soil_env = self.config['soil_env'],
          start_year = self.config['start_year'], end_year = self.config['end_year'], 
          sampling_start_year=self.config['sampling_start_year'],
          sampling_end_year=self.config['sampling_end_year'],
-         n_weather_samples=self.config['n_weather_samples'])
+         n_weather_samples=self.config['n_weather_samples'],
+         fixed_weather = self.config['fixed_weather'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
         elif config["method"] == "PPO":
@@ -106,9 +113,10 @@ class Train:
             start_year = self.config['start_year'], end_year = self.config['end_year'],
             sampling_start_year=self.config['sampling_start_year'],
             sampling_end_year=self.config['sampling_end_year'],
-            n_weather_samples=self.config['n_weather_samples'])
+            n_weather_samples=self.config['n_weather_samples'],
+            fixed_weather = self.config['fixed_weather'])
         eval_env.training = False
-        eval_env.norm_reward=False
+        eval_env.norm_reward = False
         eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
                              log_path='runs', eval_freq=config['eval_freq'],
                              deterministic=True, render=False)
@@ -174,9 +182,9 @@ class Train:
     def eval_experts(self, action_series, eval_env, name):
         action_series_int = np.array(action_series, dtype=int)
         expert_policy = OpenLoopPolicy(action_series_int)
-        r, _, _, r_seq= _evaluate_policy(expert_policy,
+        r, _, _, _ = _evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=1,
+                                n_eval_episodes=10,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
         #wandb.log({f'train/baseline/'+name+'_rseq': r_seq})
@@ -197,7 +205,7 @@ if __name__ == '__main__':
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 end_year = 1981, sampling_start_year=1980, sampling_end_year=2013,
-                n_weather_samples=100)
+                n_weather_samples=100, fixed_weather = True)
 
     wandb.init(
     config=config,
