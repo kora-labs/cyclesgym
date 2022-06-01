@@ -31,7 +31,9 @@ class Train:
         # rl config is configured from wandb config
 
 
-    def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980):
+    def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
+        sampling_start_year=1980, sampling_end_year=2013,
+        n_weather_samples=100):
         if not training:
             n_procs = 1
 
@@ -42,15 +44,15 @@ class Train:
                 if soil_env:
                     env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
                         start_year = start_year, end_year = end_year,
-                        self.sampling_start_year=1980,
-                        self.sampling_end_year=2013,
-                        self.n_weather_samples=100)
+                        sampling_start_year=sampling_start_year,
+                        sampling_end_year=sampling_end_year,
+                        n_weather_samples=n_weather_samples)
                 else:
                     env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
                         start_year = start_year, end_year = end_year,
-                        self.sampling_start_year=1980,
-                        self.sampling_end_year=2013,
-                        self.n_weather_samples=100)
+                        sampling_start_year=sampling_start_year,
+                        sampling_end_year=sampling_end_year,
+                        n_weather_samples=n_weather_samples)
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
@@ -64,14 +66,17 @@ class Train:
         norm_reward = (training and self.config['norm_reward'])
 
         #high clipping values so that they effectively get ignored
-        env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=5000., clip_reward=5000.)
+        env = VecNormalize(env, norm_obs=True, norm_reward= norm_reward, clip_obs=20000., clip_reward=20000.)
 
         return env
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=1, soil_env = self.config['soil_env'],
-         start_year = self.config['start_year'], end_year = self.config['end_year'])
+        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
+         start_year = self.config['start_year'], end_year = self.config['end_year'], 
+         sampling_start_year=self.config['sampling_start_year'],
+         sampling_end_year=self.config['sampling_end_year'],
+         n_weather_samples=self.config['n_weather_samples'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
         elif config["method"] == "PPO":
@@ -98,7 +103,10 @@ class Train:
         # The test environment will automatically have the same observation normalization applied to it by 
         # EvalCallBack
         eval_env = self.env_maker(training = False, soil_env = self.config['soil_env'],
-            start_year = self.config['start_year'], end_year = self.config['end_year'])
+            start_year = self.config['start_year'], end_year = self.config['end_year'],
+            sampling_start_year=self.config['sampling_start_year'],
+            sampling_end_year=self.config['sampling_end_year'],
+            n_weather_samples=self.config['n_weather_samples'])
         eval_env.training = False
         eval_env.norm_reward=False
         eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
@@ -185,10 +193,10 @@ if __name__ == '__main__':
     else:
         method = "A2C"
 
-    config = dict(total_timesteps = 0, eval_freq = 100, run_id = 0,
+    config = dict(total_timesteps = 500000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
-                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980,
-                end_year = 1980, sampling_start_year=1980, sampling_end_year=2013,
+                method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
+                end_year = 1981, sampling_start_year=1980, sampling_end_year=2013,
                 n_weather_samples=100)
 
     wandb.init(

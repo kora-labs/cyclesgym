@@ -1,6 +1,6 @@
 project: agro-rl
 program: train.py
-method: random
+method: grid
 metric:
   goal: maximize
   name: stochastic_return_mean
@@ -8,11 +8,6 @@ parameters:
   norm_reward:
     value: True
 
-  n_actions: 
-    values: [3, 7, 11]
+  end_year: 
+    values: [1980, 1981, 1984, 1989]
 
-  soil_env:
-    values: [True, False]
-
-  method:
-    values: ["DQN", "A2C", "PPO"]
