@@ -27,7 +27,7 @@ class CornSoilCropWeatherObs(CornShuffledWeather):
         CyclesEnv.__init__(self, 
                           SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
-                         ROTATION_SIZE=1,
+                         ROTATION_SIZE=self.rotation_size,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
                          HOURLY_INFILTRATION=1,
@@ -80,7 +80,9 @@ class CornSoilCropWeatherObs(CornShuffledWeather):
         super()._init_output_managers()
         self.soil_n_file = self._get_output_dir().joinpath('N.dat')
         self.soil_n_manager = SoilNManager(self.soil_n_file)
-    
+        self.output_managers.append(self.soil_n_manager)
+        self.output_files.append(self.soil_n_file)
+
     # Add observer of soil to compound one
     def _init_observer(self, *args, **kwargs):
         end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -118,6 +120,8 @@ def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start
         start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
         sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples), mask=mask)
     return smart_obs_corn_env
+
+
 
 
 

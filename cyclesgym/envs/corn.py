@@ -141,7 +141,8 @@ class Corn(CyclesEnv):
             self._update_operation_file()
             self.implementer.start_year = self.reinit_year + 1
 
-        self.season_manager.update_file(self.season_file)
+        self._update_output_managers()
+
         # Compute reward
         r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
