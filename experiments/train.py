@@ -78,7 +78,7 @@ class Train:
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=1, soil_env = self.config['soil_env'],
+        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
          start_year = self.config['start_year'], end_year = self.config['end_year'], 
          sampling_start_year=self.config['sampling_start_year'],
          sampling_end_year=self.config['sampling_end_year'],
