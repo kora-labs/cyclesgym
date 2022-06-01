@@ -22,9 +22,9 @@ class CropPlanningBaselines(object):
             shutil.copy(src, dest)
         self.custom_sim_id = lambda: '1'  # This way the output does not depend on time and can be deleted by teardown
 
-    def _test_policy(self, policy):
-        env = CropPlanningFixedPlanting(start_year=2000, end_year=2016, rotation_crops=['CornRM.100',
-                                                                                        'SoybeanMG.3'])
+    def _test_policy(self, policy, start, end, weather_file):
+        env = CropPlanningFixedPlanting(start_year=start, end_year=end, weather_file=weather_file,
+                                        rotation_crops=['CornRM.100', 'SoybeanMG.3'])
         env.reset()
         year = 0
 
@@ -43,24 +43,32 @@ class CropPlanningBaselines(object):
         print(time.time() - start)
         return crop_from_env_1, crop_from_env_2, rewards
 
-    def test_equal(self):
-        rotation_policy = [(1, 2), (0, 1)]*11
-        only_soy = [(1, 2)]*21
-        only_corn = [(0, 1)]*21
-        long_rotation = [(1, 2), (1, 2), (1, 2), (1, 2), (0, 1)]*7
+    def test_equal(self, start, end, weather_file):
+        rotation_policy = [(1, 2), (0, 1)] * (end - start + 1)
+        only_soy = [(1, 2)] * (end - start + 1)
+        only_corn = [(0, 1)] * (end - start + 1)
+        long_rotation = [(1, 2), (1, 2), (1, 2), (1, 2), (0, 1)] * (end - start)
+        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(long_rotation,  start, end, weather_file)
+        print(start, end, weather_file, sum(rewards))
 
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(long_rotation)
-        print(sum(rewards))
+        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(rotation_policy,  start, end, weather_file)
+        print(start, end, weather_file, sum(rewards))
 
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(rotation_policy)
-        print(sum(rewards))
+        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_soy,  start, end, weather_file)
+        print(start, end, weather_file, sum(rewards))
 
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_soy)
-        print(sum(rewards))
-
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_corn)
-        print(sum(rewards))
+        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_corn,  start, end, weather_file)
+        print(start, end, weather_file, sum(rewards))
 
 
 if __name__ == '__main__':
-    CropPlanningBaselines().test_equal()
+    train_start_year = 1980
+    train_end_year = 1998
+    test_end_year = 2016
+
+    weather_train_file = 'RockSprings.weather'
+    weather_test_file = 'NewHolland.weather'
+
+    #CropPlanningBaselines().test_equal(1980, 1998, weather_train_file)
+    #CropPlanningBaselines().test_equal(1998, 2016, weather_train_file)
+    CropPlanningBaselines().test_equal(1980, 2015, weather_test_file)
