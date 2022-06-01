@@ -13,7 +13,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 
 from eval import _evaluate_policy
 import gym
-from cyclesgym.envs.corn import Corn
+from cyclesgym.envs.corn import CornShuffledWeather
 from corn_soil_refined import CornSoilRefined
 import wandb
 from wandb.integration.sb3 import WandbCallback
@@ -41,10 +41,16 @@ class Train:
             def _f():
                 if soil_env:
                     env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = start_year, end_year = end_year)
+                        start_year = start_year, end_year = end_year,
+                        self.sampling_start_year=1980,
+                        self.sampling_end_year=2013,
+                        self.n_weather_samples=100)
                 else:
-                    env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = start_year, end_year = end_year)
+                    env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                        start_year = start_year, end_year = end_year,
+                        self.sampling_start_year=1980,
+                        self.sampling_end_year=2013,
+                        self.n_weather_samples=100)
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
@@ -64,7 +70,7 @@ class Train:
 
     def train(self):
         
-        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
+        train_env = self.env_maker(training = True, n_procs=1, soil_env = self.config['soil_env'],
          start_year = self.config['start_year'], end_year = self.config['end_year'])
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
@@ -132,12 +138,8 @@ class Train:
                                                                                        env=eval_env,
                                                                                        n_eval_episodes=5,
                                                                                        deterministic=False)
-        print(actions_det.shape)
-        print(actions_stoc.shape)
-        print(episode_rewards_det)
-        print(episode_rewards_stoc)
+    
         T = actions_stoc.shape[1]
-        print(T)
         wandb.log({'deterministic_return': mean_r_det,
                    'stochastic_return_mean': mean_r_stoc,
                    'stochastic_return_std': std_r_stoc,
@@ -185,8 +187,9 @@ if __name__ == '__main__':
 
     config = dict(total_timesteps = 0, eval_freq = 100, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
-                method = "A2C", n_actions = 11, soil_env=False, start_year = 1980,
-                end_year = 1980)
+                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980,
+                end_year = 1980, sampling_start_year=1980, sampling_end_year=2013,
+                n_weather_samples=100)
 
     wandb.init(
     config=config,
@@ -207,7 +210,6 @@ if __name__ == '__main__':
     eval_env.training = False
     # reward normalization is not needed at test time
     eval_env.norm_reward = False
-    
     trainer.evaluate_log(model, eval_env)
     
     agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
@@ -229,7 +231,7 @@ if __name__ == '__main__':
                                          maxN=150,
                                          n_actions=config['n_actions'],
                                          delta_t=7)
-
+    
     n = config['end_year'] - config['start_year']
     agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
     nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)

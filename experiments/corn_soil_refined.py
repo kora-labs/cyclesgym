@@ -1,11 +1,12 @@
-from cyclesgym.envs import Corn
+from cyclesgym.envs.corn import CornShuffledWeather
 import numpy as np 
 
 import cyclesgym.envs.observers as observers
 from cyclesgym.managers import SoilNManager
 from cyclesgym.envs.common import CyclesEnv
+from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 
-class CornSoilCropWeatherObs(Corn):
+class CornSoilCropWeatherObs(CornShuffledWeather):
     # Need to write N to output
     def __init__(self,
                  delta,
@@ -16,13 +17,16 @@ class CornSoilCropWeatherObs(Corn):
                  weather_file='RockSprings.weather',
                  start_year=1980,
                  end_year=1980,
-                 use_reinit=True
+                 use_reinit=True,
+                 sampling_start_year=1980,
+                 sampling_end_year=2013,
+                 n_weather_samples=100
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
         CyclesEnv.__init__(self, 
-                          SIMULATION_START_YEAR=1980,
-                         SIMULATION_END_YEAR=1980,
+                          SIMULATION_START_YEAR=start_year,
+                         SIMULATION_END_YEAR=end_year,
                          ROTATION_SIZE=1,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
@@ -50,6 +54,20 @@ class CornSoilCropWeatherObs(Corn):
         self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
+
+        # Store sampling related variables
+        self.n_weather_samples = n_weather_samples
+        self.sampling_start_year = sampling_start_year
+        self.sampling_end_year = sampling_end_year
+
+        # Create directory to store weather
+        # TODO: Rename create_sim_id if used here as well
+        self.env_id = create_sim_id()
+        self.weather_temporary_directory = MyTemporaryDirectory(
+            path=self._get_weather_dir())
+
+        # Generate weather files by reshuffling
+        self._generate_weather()
     
     # Add N manager to fields
     def _post_init_setup(self):
@@ -72,31 +90,34 @@ class CornSoilCropWeatherObs(Corn):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year)
                                            ])
-def CornSoilRefined(delta, n_actions, maxN, start_year, end_year):
-	large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-     start_year = start_year, end_year=end_year)
-	s = large_obs_corn_env.reset()
-	large_obs_corn_env.observer.obs_names
+def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start_year, sampling_end_year,
+     n_weather_samples):
+    large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+     start_year = start_year, end_year=end_year, sampling_start_year=1980, sampling_end_year=2013,
+     n_weather_samples=100)
+    s = large_obs_corn_env.reset()
+    large_obs_corn_env.observer.obs_names
 
-	from cyclesgym.envs.common import PartialObsEnv
-	target_obs = ['PP', # Precipitation
-	              'TX', # Max temperature
-	              'TN', # Min temperature
-	              'SOLAR', # Radiation
-	              'RHX', # Max relative humidity
-	              'RHN', # Min relative humidity
-	              'STAGE', # Stage in the plant life cycle
-	              'CUM. BIOMASS', # Cumulative plant biomass
-	              'N STRESS', 
-	              'WATER STRESS',
-	              'ORG SOIL N', # The sum of microbial biomass N and stabilized soil organic N pools.
-	              'PROF SOIL NO3', # Soil profile nitrate-N content.
-	              'PROF SOIL NH4' # Soil profile ammonium-N content.
-	             ]
-	mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
-	smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-        start_year = start_year, end_year=end_year), mask=mask)
-	return smart_obs_corn_env
+    from cyclesgym.envs.common import PartialObsEnv
+    target_obs = ['PP', # Precipitation
+                  'TX', # Max temperature
+                  'TN', # Min temperature
+                  'SOLAR', # Radiation
+                  'RHX', # Max relative humidity
+                  'RHN', # Min relative humidity
+                  'STAGE', # Stage in the plant life cycle
+                  'CUM. BIOMASS', # Cumulative plant biomass
+                  'N STRESS', 
+                  'WATER STRESS',
+                  'ORG SOIL N', # The sum of microbial biomass N and stabilized soil organic N pools.
+                  'PROF SOIL NO3', # Soil profile nitrate-N content.
+                  'PROF SOIL NH4' # Soil profile ammonium-N content.
+                 ]
+    mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
+    smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+        start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
+        sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples), mask=mask)
+    return smart_obs_corn_env
 
 
 
