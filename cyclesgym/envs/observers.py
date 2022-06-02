@@ -124,12 +124,16 @@ class CropObserver(DailyOutputObserver):
 class NToDateObserver(Observer):
 
     def __init__(self,
-                 end_year: int):
+                 end_year: int, with_year = False):
         super(NToDateObserver, self).__init__(end_year)
         self.N_to_date = 0
         self.Nobs = 2
+        #if including the year then you need another obs
+        if with_year:
+            self.Nobs = 3
         self.lower_bound = np.full((self.Nobs,), -np.inf)
         self.upper_bound = np.full((self.Nobs,), np.inf)
+        self.with_year = with_year #whether to include the year number in the state
 
     # TODO: Fix Liskov substitution principle (same signature as parent method)
     def compute_obs(self,
@@ -140,8 +144,12 @@ class NToDateObserver(Observer):
         date = cap_date(date, self.end_year)
         self.obs_names = ['DOY', 'N TO DATE']
 
-        _, doy = date2ydoy(date)
+        y, doy = date2ydoy(date)
+        y = self.end_year - y
         self.N_to_date += N
+        if self.with_year:
+            self.obs_names = ['DOY', 'N TO DATE', 'Y']
+            return np.array([doy, self.N_to_date, y])
         return np.array([doy, self.N_to_date])
 
     def reset(self):

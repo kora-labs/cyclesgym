@@ -20,7 +20,8 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
                  use_reinit=True,
                  sampling_start_year=1980,
                  sampling_end_year=2013,
-                 n_weather_samples=100
+                 n_weather_samples=100,
+                 with_obs_year=False
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
@@ -50,6 +51,8 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
                          WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=delta)
+
+        self.with_obs_year = with_obs_year
         self._post_init_setup()
         self._init_observer()
         self._generate_observation_space()
@@ -90,7 +93,7 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
             observers.WeatherObserver(weather_manager=self.weather_manager, end_year=end_year),
             observers.CropObserver(crop_manager=self.crop_output_manager, end_year=end_year),
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
-            observers.NToDateObserver(end_year=end_year)
+            observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
 
 
@@ -105,7 +108,8 @@ class CornSoilCropWeatherObs(Corn):
                  weather_file='RockSprings.weather',
                  start_year=1980,
                  end_year=1980,
-                 use_reinit=True
+                 use_reinit=True,
+                 with_obs_year=False
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
@@ -135,6 +139,8 @@ class CornSoilCropWeatherObs(Corn):
                          WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=delta)
+
+        self.with_obs_year = with_obs_year
         self._post_init_setup()
         self._init_observer()
         self._generate_observation_space()
@@ -161,19 +167,18 @@ class CornSoilCropWeatherObs(Corn):
             observers.WeatherObserver(weather_manager=self.weather_manager, end_year=end_year),
             observers.CropObserver(crop_manager=self.crop_output_manager, end_year=end_year),
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
-            observers.NToDateObserver(end_year=end_year)
+            observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
 
-
 def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start_year, sampling_end_year,
-     n_weather_samples, fixed_weather):
+     n_weather_samples, fixed_weather, with_obs_year):
     if fixed_weather:
         large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-         start_year = start_year, end_year=end_year)
+         start_year = start_year, end_year=end_year, with_obs_year=with_obs_year)
     else:
         large_obs_corn_env = CornSoilCropWeatherObsShuffled(delta=delta, n_actions=n_actions, maxN=maxN,
-         start_year = start_year, end_year=end_year, sampling_start_year=1980, sampling_end_year=2013,
-         n_weather_samples=100)
+            start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples, with_obs_year=with_obs_year)
     s = large_obs_corn_env.reset()
     large_obs_corn_env.observer.obs_names
 
@@ -190,16 +195,17 @@ def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start
                   'WATER STRESS',
                   'ORG SOIL N', # The sum of microbial biomass N and stabilized soil organic N pools.
                   'PROF SOIL NO3', # Soil profile nitrate-N content.
-                  'PROF SOIL NH4' # Soil profile ammonium-N content.
+                  'PROF SOIL NH4', # Soil profile ammonium-N content.
+                  'Y' # Years left
                  ]
     mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
     if fixed_weather:
         smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
-            start_year = start_year, end_year=end_year), mask=mask)
+            start_year = start_year, end_year=end_year, with_obs_year=with_obs_year), mask=mask)
     else:
         smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObsShuffled(delta=delta, n_actions=n_actions, maxN=maxN,
             start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
-            sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples), mask=mask)
+            sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples, with_obs_year=with_obs_year), mask=mask)
     return smart_obs_corn_env
 
 

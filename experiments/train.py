@@ -10,6 +10,7 @@ from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
+from cyclesgym.utils import EvalCallbackCustom
 
 from eval import _evaluate_policy
 import gym
@@ -17,6 +18,7 @@ from cyclesgym.envs.corn import CornShuffledWeather
 from corn_soil_refined import CornSoilRefined
 import wandb
 from wandb.integration.sb3 import WandbCallback
+from pathlib import Path
 import sys
 
 from cyclesgym.dummy_policies import OpenLoopPolicy
@@ -28,14 +30,14 @@ class Train:
 
     def __init__(self, experiment_config) -> None:
         self.config = experiment_config
+        self.dir = wandb.run.dir
+        self.model_dir = Path(self.dir).joinpath('models')
         # rl config is configured from wandb config
 
 
     def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
-        n_weather_samples=100, fixed_weather = True):
-        if not training:
-            n_procs = 1
+        n_weather_samples=100, fixed_weather = True, with_obs_year=False):
 
         def make_env():
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
@@ -47,14 +49,16 @@ class Train:
                         sampling_start_year=sampling_start_year,
                         sampling_end_year=sampling_end_year,
                         n_weather_samples=n_weather_samples,
-                        fixed_weather=fixed_weather)
+                        fixed_weather=fixed_weather,
+                        with_obs_year=with_obs_year)
                 else:
                     if fixed_weather:
                         env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
                             start_year = start_year, end_year = end_year,
                             sampling_start_year=sampling_start_year,
                             sampling_end_year=sampling_end_year,
-                            n_weather_samples=n_weather_samples)
+                            n_weather_samples=n_weather_samples,
+                            with_obs_year=with_obs_year)
                     else:
                         env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
                             start_year = start_year, end_year = end_year)
@@ -76,58 +80,114 @@ class Train:
 
         return env
 
-    def train(self):
-        
-        train_env = self.env_maker(training = True, n_procs=16, soil_env = self.config['soil_env'],
-         start_year = self.config['start_year'], end_year = self.config['end_year'], 
-         sampling_start_year=self.config['sampling_start_year'],
-         sampling_end_year=self.config['sampling_end_year'],
-         n_weather_samples=self.config['n_weather_samples'],
-         fixed_weather = self.config['fixed_weather'])
-        if config["method"] == "A2C":
-            model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
-        elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
-        elif config["method"] == "DQN":
-            model = DQN('MlpPolicy', train_env, verbose=0, tensorboard_log=f"runs")
-        else:
-            raise Exception("Not an RL method that has been implemented")
+    def long_env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
+        sampling_start_year=1980, sampling_end_year=2013,
+        n_weather_samples=100, fixed_weather = True, with_obs_year=False):
+        """
+        for single year testing we want to have an env that is identical to others but just a longer time horizon
+        """
+        def f(years):
+            return self.env_maker(training = False, soil_env = self.config['soil_env'],
+                        start_year = self.config['start_year'], end_year = self.config['end_year']+years-1,
+                        sampling_start_year=self.config['sampling_start_year'],
+                        sampling_end_year=self.config['sampling_end_year'],
+                        n_weather_samples=self.config['n_weather_samples'],
+                        fixed_weather = self.config['fixed_weather'],
+                        with_obs_year=self.config['with_obs_year'])
+        return f
 
+    def get_envs(self, n_procs):
         """
-        wandb_callback = WandbCallback(gradient_save_freq=0,  # 100,  # Don't save gradients
-                                       verbose=2,
-                                       model_save_path=WANDB_PATH.joinpath(
-                                           f'./runs/{run.id}'),
-                                       model_save_freq=20, )
-        
-        eval_freq = self.config['eval_freq']
-        eval_callback_sto = EvalCallback_(self.env_maker(), eval_freq=eval_freq, deterministic=False,
-                                      n_eval_episodes=10)
-        eval_callback_det = EvalCallback_(self.env_maker(), eval_freq=eval_freq, deterministic=True,
-                                      n_eval_episodes=1)
-        callbacks = [eval_callback, wandb_callback]
+        Returns some environments given n_procs. Used because I often want the same settings
+        but a different n_procs for policy visualization and baseline evaluations
         """
+        hold_out_sampling_start_year = self.config['sampling_end_year'] + 1
+        assert (hold_out_sampling_start_year <= 2015)
+        hold_out_sampling_end_year = 2015 #just last year in the weather data
+        duration = self.config['end_year'] - self.config['start_year'] 
+
         # The test environment will automatically have the same observation normalization applied to it by 
         # EvalCallBack
-        eval_env = self.env_maker(training = False, soil_env = self.config['soil_env'],
+        eval_env_train = self.env_maker(training = False, n_procs=n_procs,
+            soil_env = self.config['soil_env'],
             start_year = self.config['start_year'], end_year = self.config['end_year'],
             sampling_start_year=self.config['sampling_start_year'],
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
-            fixed_weather = self.config['fixed_weather'])
-        eval_env.training = False
-        eval_env.norm_reward = False
-        eval_callback_det = EvalCallback(eval_env, best_model_save_path='./logs/',
-                             log_path='runs', eval_freq=config['eval_freq'],
-                             deterministic=True, render=False)
-        eval_callback_sto = EvalCallback(eval_env, best_model_save_path='./logs/',
-                             log_path='runs', eval_freq=config['eval_freq'],
-                             deterministic=False, render=False)
-        callback = [WandbCallback(), eval_callback_det, eval_callback_sto]
+            fixed_weather = self.config['fixed_weather'],
+            with_obs_year=self.config['with_obs_year'])
+
+        #the out of sample weather env
+        eval_env_test = self.env_maker(training = False, n_procs=n_procs,
+            soil_env = self.config['soil_env'],
+            start_year = hold_out_sampling_start_year, end_year = hold_out_sampling_start_year+duration,
+            sampling_start_year=hold_out_sampling_start_year,
+            sampling_end_year=hold_out_sampling_end_year,
+            n_weather_samples=self.config['n_weather_samples'],
+            fixed_weather = self.config['fixed_weather'],
+            with_obs_year=self.config['with_obs_year'])
+
+        eval_env_train.training = False
+        eval_env_train.norm_reward = False
+        eval_env_test.training = False
+        eval_env_test.norm_reward = False
+
+        return eval_env_train, eval_env_test
+
+
+    def get_eval_callbacks(self):
+        """
+        generates all callbacks plus test and train envs
+        """
+
+        eval_env_train, eval_env_test = self.get_envs(n_procs=self.config['n_process'])
+
+        eval_callback_test_det = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
+            log_path=str(self.model_dir.joinpath('eval_test_det')),
+            eval_freq=config['eval_freq'], deterministic=True, render=False,
+            eval_prefix='eval_test_det')
+        eval_callback_test_sto = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
+            log_path=str(self.model_dir.joinpath('eval_test_det')),
+            eval_freq=config['eval_freq'], deterministic=False, render=False,
+            eval_prefix='eval_test_det')
+
+        eval_callback_det = EvalCallbackCustom(eval_env_train, best_model_save_path=None,
+            log_path=str(self.model_dir.joinpath('eval_test_det')),
+            eval_freq=config['eval_freq'], deterministic=True, render=False,
+            eval_prefix='eval_train_det')
+        eval_callback_sto = EvalCallbackCustom(eval_env_train, best_model_save_path=str(self.model_dir.joinpath('train_sto')),
+            log_path=str(self.model_dir.joinpath('eval_test_det')),
+            eval_freq=config['eval_freq'], deterministic=False, render=False,
+            eval_prefix='eval_train_sto')
+
+        callback = [WandbCallback(model_save_path=str(self.model_dir), model_save_freq=int(self.config['eval_freq'] / self.config['n_process'])),
+            eval_callback_det, eval_callback_sto,
+            eval_callback_test_det, eval_callback_test_sto]
+        return callback
+
+    def train(self):
+        
+        train_env = self.env_maker(training = True, n_procs=self.config['n_process'], soil_env = self.config['soil_env'],
+         start_year = self.config['start_year'], end_year = self.config['end_year'], 
+         sampling_start_year=self.config['sampling_start_year'],
+         sampling_end_year=self.config['sampling_end_year'],
+         n_weather_samples=self.config['n_weather_samples'],
+         fixed_weather = self.config['fixed_weather'],
+         with_obs_year=self.config['with_obs_year'])
+        if config["method"] == "A2C":
+            model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
+        elif config["method"] == "PPO":
+            model = PPO('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
+        elif config["method"] == "DQN":
+            model = DQN('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
+        else:
+            raise Exception("Not an RL method that has been implemented")
+
+        callback = self.get_eval_callbacks()
         model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
         model.save(str(self.config['run_id'])+'.zip')
         train_env.save(self.config['stats_path'])
-        return model, eval_env
+        return model
 
     def evaluate_log(self, model, eval_env):
         """
@@ -184,10 +244,84 @@ class Train:
         expert_policy = OpenLoopPolicy(action_series_int)
         r, _, _, _ = _evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=10,
+                                n_eval_episodes=20,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
-        #wandb.log({f'train/baseline/'+name+'_rseq': r_seq})
+        return
+
+    def one_year_eval(self, model):
+        """
+        An evaluation to test the one year policy on 2,5,10 years
+        """
+        long_env = self.long_env_maker(training = False, n_procs = self.config['n_process'],
+            soil_env = self.config['soil_env'],
+            start_year = self.config['start_year'], end_year = self.config['end_year'],
+            sampling_start_year=self.config['sampling_start_year'],
+            sampling_end_year=self.config['sampling_end_year'],
+            n_weather_samples=self.config['n_weather_samples'],
+            fixed_weather = self.config['fixed_weather'],
+            with_obs_year=self.config['with_obs_year'])
+        for long_len in [2, 5, 10]:
+            r_det, _, _, _ = _evaluate_policy(model,
+                                long_env(long_len),
+                                n_eval_episodes=20,
+                                deterministic=False)
+            r_sto, _, _, _ = _evaluate_policy(model,
+                                long_env(long_len),
+                                n_eval_episodes=20,
+                                deterministic=True)
+            name = "long_eval_det"+str(long_len)
+            wandb.log({f'eval/'+name: r_det})
+            name = "long_eval_sto"+str(long_len)
+            wandb.log({f'eval/'+name: r_sto})
+        return
+
+    def eval_baselines(self):
+        ## evaluate baseline strategies on the train and test envs
+        #make an env on 1 process for open loop policies and vis
+        eval_env_train, eval_env_test = self.get_envs(n_procs = self.config['n_process'])
+        #  do not update moving averages at test time
+        eval_env_train.training = False
+        # reward normalization is not needed at test time
+        eval_env_train.norm_reward = False
+
+        agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
+                                             maxN=150,
+                                             n_actions=config['n_actions'],
+                                             delta_t=7)
+
+        nonsense_exact_sequence = expert.create_action_sequence(doy=[110, 155, 300], weight=[35, 120, 50],
+                                             maxN=150,
+                                             n_actions=config['n_actions'],
+                                             delta_t=7)
+
+        cycles_exact_sequence = expert.create_action_sequence(doy=110, weight=150,
+                                             maxN=150,
+                                             n_actions=config['n_actions'],
+                                             delta_t=7)
+
+        organic_exact_sequence = expert.create_action_sequence(doy=110, weight=0,
+                                             maxN=150,
+                                             n_actions=config['n_actions'],
+                                             delta_t=7)
+        
+        n = config['end_year'] - config['start_year']
+        agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
+        nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)
+        cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
+        organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
+
+        trainer.eval_experts(organic_exact_sequence, eval_env_train, "organic-train")
+        trainer.eval_experts(agro_exact_sequence, eval_env_train, "agro-train")
+        trainer.eval_experts(cycles_exact_sequence, eval_env_train, "cycles-train")
+        trainer.eval_experts(nonsense_exact_sequence, eval_env_train, "nonsense-train")
+
+        trainer.eval_experts(organic_exact_sequence, eval_env_test, "organic-test")
+        trainer.eval_experts(agro_exact_sequence, eval_env_test, "agro-test")
+        trainer.eval_experts(cycles_exact_sequence, eval_env_test, "cycles-test")
+        trainer.eval_experts(nonsense_exact_sequence, eval_env_test, "nonsense-test")
+
+        return
 
 def make_multi_year(action_seq, n):
     # n is an int for number of years
@@ -196,16 +330,16 @@ def make_multi_year(action_seq, n):
 
 if __name__ == '__main__':
 
-    if(len(sys.argv) > 1):
-        method = str(sys.argv[1])
-    else:
-        method = "A2C"
-
-    config = dict(total_timesteps = 500000, eval_freq = 1000, run_id = 0,
+    config = dict(total_timesteps = 1000000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
-                method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
-                end_year = 1981, sampling_start_year=1980, sampling_end_year=2013,
-                n_weather_samples=100, fixed_weather = True)
+                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980,
+                end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
+                n_weather_samples=100, fixed_weather = False,
+                n_process = 16, with_obs_year = True, baseline=False)
+
+    # modify the config so that if we do a 1 year experiment, we don't include obs year (not useful)
+    if config['start_year'] == config['end_year']:
+        config['with_obs_year'] == False
 
     wandb.init(
     config=config,
@@ -218,46 +352,27 @@ if __name__ == '__main__':
     config = wandb.config
     
     trainer = Train(config)
-    model, eval_env = trainer.train()
-    # Load the saved statistics
 
-    #eval_env = VecNormalize.load(config['stats_path'], eval_env)
-    #  do not update moving averages at test time
-    eval_env.training = False
-    # reward normalization is not needed at test time
-    eval_env.norm_reward = False
-    trainer.evaluate_log(model, eval_env)
+    #if only trying to get baselines...
+    if config['baseline']:
+        trainer.eval_baselines()
+    else:
+        model = trainer.train()
+        # Load the saved statistics
+
+        _, eval_env_test = trainer.get_envs(n_procs = 1)
+
+        eval_env_test = VecNormalize.load(config['stats_path'], eval_env_test)
+        #  do not update moving averages at test time
+        eval_env_test.training = False
+        # reward normalization is not needed at test time
+        eval_env_test.norm_reward = False
+        
+        trainer.evaluate_log(model, eval_env_test)
+
+        if config['start_year'] == config['end_year']:
+            trainer.one_year_eval(model)
+
     
-    agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
-                                         maxN=150,
-                                         n_actions=config['n_actions'],
-                                         delta_t=7)
-
-    nonsense_exact_sequence = expert.create_action_sequence(doy=[110, 155, 300], weight=[35, 120, 50],
-                                         maxN=150,
-                                         n_actions=config['n_actions'],
-                                         delta_t=7)
-
-    cycles_exact_sequence = expert.create_action_sequence(doy=110, weight=150,
-                                         maxN=150,
-                                         n_actions=config['n_actions'],
-                                         delta_t=7)
-
-    organic_exact_sequence = expert.create_action_sequence(doy=110, weight=0,
-                                         maxN=150,
-                                         n_actions=config['n_actions'],
-                                         delta_t=7)
-    
-    n = config['end_year'] - config['start_year']
-    agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
-    nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)
-    cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
-    organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
-
-    trainer.eval_experts(organic_exact_sequence, eval_env, "organic")
-    trainer.eval_experts(agro_exact_sequence, eval_env, "agro")
-    trainer.eval_experts(cycles_exact_sequence, eval_env, "cycles")
-    
-    trainer.eval_experts(nonsense_exact_sequence, eval_env, "nonsense")
     
 
