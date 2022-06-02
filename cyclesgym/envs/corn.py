@@ -61,7 +61,6 @@ class Corn(CyclesEnv):
                          WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=delta)
-        self.with_obs_year = with_obs_year
         self._post_init_setup()
         self._init_observer()
         self._generate_observation_space()
