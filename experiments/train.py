@@ -81,7 +81,7 @@ class Train:
                                             training=False)
 
         eval_env_other_loc = self.env_maker(start_year=self.config['train_start_year'],
-                                            end_year=self.config['eval_end_year']-1,
+                                            end_year=self.config['train_end_year'],
                                             weather_file='NewHolland.weather',
                                             training=False)
 
