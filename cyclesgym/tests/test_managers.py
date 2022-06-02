@@ -96,6 +96,20 @@ class TestWeatherManager(unittest.TestCase):
         assert compare_stripped_string(read_skip_comments(self.fname),
                                        self.manager._to_str())
 
+    def test_consistency(self):
+        """
+        Test that loading a saved file results in same dataframes.
+        """
+        # TODO: Add same test for other managers
+        fname = Path(__file__).parent.joinpath(
+            'DummyWeatherFromManager.weather')
+        self.manager.save(fname)
+        load_manager = WeatherManager(fname)
+        assert self.manager.immutables.equals(load_manager.immutables)
+        assert self.manager.mutables.equals(load_manager.mutables)
+
+
+
 
 class TestControlManager(unittest.TestCase):
     def setUp(self):

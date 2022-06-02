@@ -15,8 +15,9 @@ class WeatherManager(InputFileManager):
         super().__init__(fname)
 
     def _parse(self, fname):
-        self._parse_immutable(fname)
-        self._parse_mutables(fname)
+        if fname is not None:
+            self._parse_immutable(fname)
+            self._parse_mutables(fname)
 
     def _parse_immutable(self, fname):
         immutables = {}
@@ -28,16 +29,21 @@ class WeatherManager(InputFileManager):
 
     def _parse_mutables(self, fname):
         n = num_lines(fname)
-        values = np.zeros((n-5, 9))
+        values = np.zeros((n, 9))
 
+        lines_to_skip = []
         with open(fname, 'r') as f:
             for i, l in enumerate(f.readlines()):
-                if i < 3 or i == 4:
+                if l.startswith(('#', 'LATITUDE', 'ALTITUDE',
+                                 'SCREENING_HEIGHT')):
+                    lines_to_skip.append(i)
                     pass
-                elif i == 3:
+                elif l.startswith('YEAR'):
                     columns = l.split()
+                    lines_to_skip.append(i)
                 else:
-                    values[i - 5, :] = [float(j) if i >= 2 else int(j) for i, j in enumerate(l.split())]
+                    values[i, :] = [float(j) if i >= 2 else int(j) for i, j in enumerate(l.split())]
+            values = np.delete(values, lines_to_skip, 0)
 
         self.mutables = pd.DataFrame(data=values, index=None, columns=columns)
         self.mutables = self.mutables.astype({'YEAR': int,
@@ -50,6 +56,7 @@ class WeatherManager(InputFileManager):
         return s
 
     def _to_str_mutables(self):
+        # units_of_measurement = '####    ###     mm      deg C   deg C   MJ/m2   %       %       m/s\n'
         return self.mutables.to_csv(index=False, sep=' ')
 
     def _to_str(self):
@@ -57,3 +64,11 @@ class WeatherManager(InputFileManager):
 
     def get_day(self, year, doy):
         return self.mutables.loc[(self.mutables['YEAR'] == year) & (self.mutables['DOY'] == doy)]
+
+    @classmethod
+    def from_df(cls, immutables_df, mutables_df):
+        # TODO: Perform sanity checks on df
+        manager = cls(fname=None)
+        manager.immutables = immutables_df.copy()
+        manager.mutables = mutables_df.copy()
+        return manager
