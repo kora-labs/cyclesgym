@@ -13,7 +13,7 @@ from pathlib import Path
 from eval import _evaluate_policy
 import gym
 from cyclesgym.envs.corn import Corn
-from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting
+from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting, CropPlanningFixedPlantingRandomWeather
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import sys
@@ -26,17 +26,21 @@ class Train:
         self.config = experiment_config
         # rl config is configured from wandb config
 
-    def env_maker(self, training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
+    def env_maker(self, env_class=CropPlanningFixedPlanting,
+                  training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
                   weather_file='RockSprings.weather'):
         if not training:
             n_procs = 1
+
+        if isinstance(env_class, str):
+            env_class = globals()[env_class]
 
         def make_env():
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                env = CropPlanningFixedPlanting(start_year=start_year, end_year=end_year, soil_file=soil_file,
-                                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
+                env = env_class(start_year=start_year, end_year=end_year, soil_file=soil_file,
+                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
 
@@ -53,6 +57,7 @@ class Train:
     def train(self):
         train_env = self.env_maker(start_year=self.config['train_start_year'],
                                    end_year=self.config['train_end_year'],
+                                   env_class=self.config['env_class'],
                                    training=True, n_procs=self.config['n_process'])
         dir = wandb.run.dir
         model_dir = Path(dir).joinpath('models')
@@ -84,6 +89,11 @@ class Train:
                                             end_year=self.config['train_end_year'],
                                             weather_file='NewHolland.weather',
                                             training=False)
+
+        eval_env_other_loc_long = self.env_maker(start_year=self.config['train_start_year'],
+                                                 end_year=self.config['eval_end_year']-1,
+                                                 weather_file='NewHolland.weather',
+                                                 training=False)
 
         eval_callback_det = EvalCallbackCustom(eval_env_train, best_model_save_path=str(model_dir.joinpath('eval_det')),
                                          log_path=str(model_dir.joinpath('eval_det')),
@@ -119,10 +129,25 @@ class Train:
                                                    eval_freq=eval_freq, deterministic=False,
                                                    render=False, eval_prefix='eval_sto_other_loc')
 
+        eval_callback_det_other_loc_long = EvalCallbackCustom(eval_env_other_loc_long,
+                                                         best_model_save_path=str(
+                                                             model_dir.joinpath('eval_det_other_loc_long')),
+                                                         log_path=str(model_dir.joinpath('eval_det_other_loc_long')),
+                                                         eval_freq=eval_freq, deterministic=True, render=False,
+                                                         eval_prefix='eval_det_other_loc_long')
+        eval_callback_sto_other_loc_long = EvalCallbackCustom(eval_env_other_loc_long,
+                                                         best_model_save_path=str(
+                                                             model_dir.joinpath('eval_sto_other_loc_long')),
+                                                         log_path=str(model_dir.joinpath('eval_sto_other_loc_long')),
+                                                         eval_freq=eval_freq, deterministic=False,
+                                                         render=False, eval_prefix='eval_sto_other_loc_long')
+
         callback = [WandbCallback(model_save_path=str(model_dir),
                                   model_save_freq=int(self.config['eval_freq'] / self.config['n_process'])),
                     eval_callback_det, eval_callback_sto, eval_callback_det_new_years, eval_callback_sto_new_years,
-                    eval_callback_det_other_loc, eval_callback_sto_other_loc]
+                    eval_callback_det_other_loc, eval_callback_sto_other_loc, eval_callback_det_other_loc_long,
+                    eval_callback_sto_other_loc_long
+                    ]
         model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
 
         return model, eval_env
@@ -181,7 +206,8 @@ if __name__ == '__main__':
 
     config = dict(train_start_year=1980, train_end_year=1998, eval_start_year=1998, eval_end_year=2016,
                   total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
-                  norm_reward=True, method="PPO", verbose=1, n_process=8, device='cpu')
+                  norm_reward=True, method="PPO", verbose=1, n_process=8, device='auto',
+                  env_class='CropPlanningFixedPlantingRandomWeather')
 
     wandb.init(
         config=config,

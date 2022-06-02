@@ -71,9 +71,9 @@ class WeatherShuffler(WeatherGenerator):
 
         super().__init__()
 
-
     def generate_weather(self):
         # Get weather base data
+        print('starting generating weather files')
         base_manager = WeatherManager(self.base_weather_file)
 
         # Restrict weather data to sampling years
@@ -110,6 +110,8 @@ class WeatherShuffler(WeatherGenerator):
             weather_fname = f'weather{i}.weather'
             self.weather_list.append(weather_fname)
             m.save(self._get_weather_dir().joinpath(weather_fname))
+
+        print('done generating weather files')
 
 
 def shuffle_weather(weather_manager: WeatherManager,
