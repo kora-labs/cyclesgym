@@ -196,7 +196,8 @@ def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start
                   'ORG SOIL N', # The sum of microbial biomass N and stabilized soil organic N pools.
                   'PROF SOIL NO3', # Soil profile nitrate-N content.
                   'PROF SOIL NH4', # Soil profile ammonium-N content.
-                  'Y' # Years left
+                  'Y', # Years left
+                  'DOI' # Day of the year
                  ]
     mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
     if fixed_weather:
