@@ -10,6 +10,8 @@ from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.utils import set_random_seed
+
 from cyclesgym.utils import EvalCallbackCustom
 
 from eval import _evaluate_policy
@@ -24,13 +26,14 @@ import sys
 from cyclesgym.dummy_policies import OpenLoopPolicy
 import expert
 import argparse
-
+import random
 
 class Train:
     """ Trainer object to wrap model training and handle environment creation, evaluation """
 
-    def __init__(self, experiment_config) -> None:
+    def __init__(self, experiment_config, with_obs_year) -> None:
         self.config = experiment_config
+        self.with_obs_year = with_obs_year
         self.dir = wandb.run.dir
         self.model_dir = Path(self.dir).joinpath('models')
         # rl config is configured from wandb config
@@ -64,15 +67,15 @@ class Train:
                             with_obs_year=with_obs_year)
                     else:
                         if fixed_weather:
+                            env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                                start_year = start_year, end_year = end_year)
+                        else:
                             env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
                                 start_year = start_year, end_year = end_year,
                                 sampling_start_year=sampling_start_year,
                                 sampling_end_year=sampling_end_year,
                                 n_weather_samples=n_weather_samples,
                                 with_obs_year=with_obs_year)
-                        else:
-                            env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                                start_year = start_year, end_year = end_year)
 
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -104,8 +107,8 @@ class Train:
                         sampling_end_year=self.config['sampling_end_year'],
                         n_weather_samples=self.config['n_weather_samples'],
                         fixed_weather = self.config['fixed_weather'],
-                        with_obs_year=self.config['with_obs_year'],
-                        nonadaptive=self.config['with_obs_year'])
+                        with_obs_year=self.with_obs_year,
+                        nonadaptive=self.config['nonadaptive'])
         return f
 
     def get_envs(self, n_procs):
@@ -127,15 +130,15 @@ class Train:
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'],
-            nonadaptive=self.config['with_obs_year'])
+            with_obs_year=self.with_obs_year,
+            nonadaptive=self.config['nonadaptive'])
 
         #the out of sample weather env
         start_year = hold_out_sampling_start_year
         end_year = hold_out_sampling_start_year+duration
         if self.config['fixed_weather']:
-            start_year = self.config['end_year'] + 1
             end_year = 2015
+            start_year = end_year-duration
         eval_env_test = self.env_maker(training = False, n_procs=n_procs,
             soil_env = self.config['soil_env'],
             start_year = start_year, end_year = end_year,
@@ -143,8 +146,8 @@ class Train:
             sampling_end_year=hold_out_sampling_end_year,
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'],
-            nonadaptive=self.config['with_obs_year'])
+            with_obs_year=self.with_obs_year,
+            nonadaptive=self.config['nonadaptive'])
 
         eval_env_train.training = False
         eval_env_train.norm_reward = False
@@ -159,7 +162,6 @@ class Train:
         generates all callbacks plus test and train envs
         """
         eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
-
         eval_env_train, eval_env_test = self.get_envs(n_procs=self.config['n_process'])
 
         eval_callback_test_det = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
@@ -193,20 +195,29 @@ class Train:
          sampling_end_year=self.config['sampling_end_year'],
          n_weather_samples=self.config['n_weather_samples'],
          fixed_weather = self.config['fixed_weather'],
-         with_obs_year=self.config['with_obs_year'],
-         nonadaptive=self.config['with_obs_year'] )
+         with_obs_year=self.with_obs_year,
+         nonadaptive=self.config['nonadaptive'] )
+
+        train_env.seed(self.config['seed'])
+
+        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
+        duration = self.config['end_year'] - self.config['start_year']
+        total_timesteps = self.config["total_episodes"] * (53 + 52 * duration)
+        n_steps = int(self.config['n_steps'] / self.config['n_process'])
+
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
         elif config["method"] == "PPO":
-            model = PPO('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
+            model = PPO('MlpPolicy', train_env, verbose=0, n_steps= n_steps, tensorboard_log=self.dir)
         elif config["method"] == "DQN":
             model = DQN('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
         else:
             raise Exception("Not an RL method that has been implemented")
 
+
         callback = self.get_eval_callbacks()
-        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
-        model.learn(total_timesteps=self.config["total_timesteps"], callback=callback, eval_freq=eval_freq)
+        
+        model.learn(total_timesteps=total_timesteps, callback=callback, eval_freq=eval_freq)
         model.save(str(self.config['run_id'])+'.zip')
         train_env.save(self.config['stats_path'])
         return model
@@ -282,8 +293,8 @@ class Train:
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'],
-            nonadaptive=self.config['with_obs_year'])
+            with_obs_year=self.with_obs_year,
+            nonadaptive=self.config['nonadaptive'])
         for long_len in [2, 5, 10]:
             r_det, _ = evaluate_policy(model,
                                 long_env(long_len),
@@ -348,38 +359,53 @@ def make_multi_year(action_seq, n):
 
 
 if __name__ == '__main__':
+    RANDOM_SEED = 0
+    """
+    torch.manual_seed(RANDOM_SEED)
+    env.seed(RANDOM_SEED)
+    """
 
-
-    config = dict(total_timesteps = 10000, eval_freq = 1000, run_id = 0,
+    config = dict(total_episodes = 10000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
-                end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
-                n_weather_samples=100, fixed_weather = False, with_obs_year = True, 
-                baseline=False, nonadaptive=False)
-
-    # modify the config so that if we do a 1 year experiment, we don't include obs year (not useful)
-    if config['start_year'] == config['end_year']:
-        config['with_obs_year'] == False
-
+                sampling_start_year=1980, sampling_end_year=2010,
+                n_weather_samples=100, 
+                baseline=False, n_steps = 2048, with_obs_year = True)
     wandb.init(
     config=config,
     sync_tensorboard=True,
     project="agro-rl",
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
+    group="repeats_2"
     )
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-np', '--n-process', type=int, default=1, metavar='N',
                          help='input number of processes for training (default: 1)')
+    parser.add_argument('-ey', '--end-year', type=int, default=1980, metavar='N',
+                         help='The final year of simulation (default: 1980)')
+    parser.add_argument('-na','--nonadaptive', default=False, action='store_true',
+        help='Whether to learn a nonadaptive policy')
+    parser.add_argument('-fw','--fixed-weather', default=False, action='store_true',
+        help='Whether to use a fixed weather')
+    parser.add_argument('-s', '--seed', type=int, default=0, metavar='N',
+                         help='The random seed used for all number generators')
+
     args = parser.parse_args()
 
-    #wandb.init(config={"lr": 0.1})
     wandb.config.update(args)
 
+
     config = wandb.config
-    
-    trainer = Train(config)
+
+    set_random_seed(config['seed'])
+    np.random.seed(config['seed'])
+    random.seed(config['seed'])
+
+    #if we do a 1 year experiment, we don't include obs year (not useful)
+    with_obs_year = config['with_obs_year'] and (config['start_year'] != config['end_year'])
+    trainer = Train(config, with_obs_year)
 
     #if trying to get baselines...
     if config['baseline']:

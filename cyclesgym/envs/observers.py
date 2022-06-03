@@ -142,14 +142,16 @@ class NToDateObserver(Observer):
 
         # Make sure we did not go into not simulated year when advancing time
         date = cap_date(date, self.end_year)
-        self.obs_names = ['DOY', 'N TO DATE']
 
         y, doy = date2ydoy(date)
         y = self.end_year - y
         self.N_to_date += N
         if self.with_year:
-            self.obs_names = ['DOY', 'N TO DATE', 'Y']
+            if self.obs_names is None:
+                self.obs_names = ['DOY', 'N TO DATE', 'Y']
             return np.array([doy, self.N_to_date, y])
+        if self.obs_names is None:
+            self.obs_names = ['DOY', 'N TO DATE']
         return np.array([doy, self.N_to_date])
 
     def reset(self):
@@ -181,7 +183,6 @@ def compound_observer(obs_list: list):
             obs = [o.compute_obs(date, **kwargs).squeeze() for o in self.obs_list]
             obs = [o for o in obs if o.size > 0]
             self.obs_names = [name for o in obs_list for name in o.obs_names]
-
             new_Nobs = sum([o.size for o in obs])
             if new_Nobs != self.Nobs:
                 print(f'Warning: runtime number of observation for {self} is different then the original'
