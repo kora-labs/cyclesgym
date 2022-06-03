@@ -145,25 +145,26 @@ class Train:
         """
         generates all callbacks plus test and train envs
         """
+        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
 
         eval_env_train, eval_env_test = self.get_envs(n_procs=self.config['n_process'])
 
         eval_callback_test_det = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
             log_path=str(self.model_dir.joinpath('eval_test_det')),
-            eval_freq=config['eval_freq'], deterministic=True, render=False,
+            eval_freq=eval_freq, deterministic=True, render=False,
             eval_prefix='eval_test_det')
         eval_callback_test_sto = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
             log_path=str(self.model_dir.joinpath('eval_test_sto')),
-            eval_freq=config['eval_freq'], deterministic=False, render=False,
+            eval_freq=eval_freq, deterministic=False, render=False,
             eval_prefix='eval_test_sto')
 
         eval_callback_det = EvalCallbackCustom(eval_env_train, best_model_save_path=None,
             log_path=str(self.model_dir.joinpath('eval_test_det')),
-            eval_freq=config['eval_freq'], deterministic=True, render=False,
+            eval_freq=eval_freq, deterministic=True, render=False,
             eval_prefix='eval_train_det')
         eval_callback_sto = EvalCallbackCustom(eval_env_train, best_model_save_path=str(self.model_dir.joinpath('train_sto')),
             log_path=str(self.model_dir.joinpath('eval_test_det')),
-            eval_freq=config['eval_freq'], deterministic=False, render=False,
+            eval_freq=eval_freq, deterministic=False, render=False,
             eval_prefix='eval_train_sto')
 
         callback = [WandbCallback(model_save_path=str(self.model_dir), model_save_freq=int(self.config['eval_freq'] / self.config['n_process'])),
@@ -190,7 +191,8 @@ class Train:
             raise Exception("Not an RL method that has been implemented")
 
         callback = self.get_eval_callbacks()
-        model.learn(total_timesteps=self.config["total_timesteps"], callback=callback)
+        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
+        model.learn(total_timesteps=self.config["total_timesteps"], callback=callback, eval_freq=eval_freq)
         model.save(str(self.config['run_id'])+'.zip')
         train_env.save(self.config['stats_path'])
         return model
@@ -286,10 +288,6 @@ class Train:
         ## evaluate baseline strategies on the train and test envs
         #make an env on 1 process for open loop policies and vis
         eval_env_train, eval_env_test = self.get_envs(n_procs = 1)
-        #  do not update moving averages at test time
-        eval_env_train.training = False
-        # reward normalization is not needed at test time
-        eval_env_train.norm_reward = False
 
         agro_exact_sequence = expert.create_action_sequence(doy=[110, 155], weight=[35, 120],
                                              maxN=150,
@@ -337,7 +335,7 @@ def make_multi_year(action_seq, n):
 if __name__ == '__main__':
 
 
-    config = dict(total_timesteps = 1000, eval_freq = 100, run_id = 0,
+    config = dict(total_timesteps = 1000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
@@ -364,8 +362,6 @@ if __name__ == '__main__':
     wandb.config.update(args)
 
     config = wandb.config
-
-    print(config)
     
     trainer = Train(config)
 
