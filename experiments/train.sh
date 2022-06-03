@@ -1,0 +1,5 @@
+bsub -W 2:00 -n 4 -R "rusage[mem=8000, ngpus_excl_p=1]" "python3 train.py -np 1"
+bsub -W 2:00 -n 4 -R "rusage[mem=8000, ngpus_excl_p=1]" "python3 train.py -np 2"
+bsub -W 2:00 -n 4 -R "rusage[mem=8000, ngpus_excl_p=1]" "python3 train.py -np 4"
+bsub -W 2:00 -n 4 -R "rusage[mem=8000, ngpus_excl_p=1]" "python3 train.py -np 8"
+bsub -W 2:00 -n 4 -R "rusage[mem=8000, ngpus_excl_p=1]" "python3 train.py -np 16"
