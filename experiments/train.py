@@ -15,7 +15,7 @@ from cyclesgym.utils import EvalCallbackCustom
 from eval import _evaluate_policy
 import gym
 from cyclesgym.envs.corn import CornShuffledWeather
-from corn_soil_refined import CornSoilRefined
+from corn_soil_refined import CornSoilRefined, NonAdaptiveCorn
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from pathlib import Path
@@ -38,31 +38,41 @@ class Train:
 
     def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
-        n_weather_samples=100, fixed_weather = True, with_obs_year=False):
+        n_weather_samples=100, fixed_weather = True, with_obs_year=False,
+        nonadaptive=False):
 
         def make_env():
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
-                if soil_env:
-                    env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                        start_year = start_year, end_year = end_year,
-                        sampling_start_year=sampling_start_year,
-                        sampling_end_year=sampling_end_year,
-                        n_weather_samples=n_weather_samples,
-                        fixed_weather=fixed_weather,
-                        with_obs_year=with_obs_year)
-                else:
-                    if fixed_weather:
-                        env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                if nonadaptive:
+                    env = NonAdaptiveCorn(delta=7, maxN=150, n_actions=self.config['n_actions'],
                             start_year = start_year, end_year = end_year,
                             sampling_start_year=sampling_start_year,
                             sampling_end_year=sampling_end_year,
                             n_weather_samples=n_weather_samples,
+                            fixed_weather=fixed_weather,
+                            with_obs_year=with_obs_year)
+                else:
+                    if soil_env:
+                        env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                            start_year = start_year, end_year = end_year,
+                            sampling_start_year=sampling_start_year,
+                            sampling_end_year=sampling_end_year,
+                            n_weather_samples=n_weather_samples,
+                            fixed_weather=fixed_weather,
                             with_obs_year=with_obs_year)
                     else:
-                        env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                            start_year = start_year, end_year = end_year)
+                        if fixed_weather:
+                            env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                                start_year = start_year, end_year = end_year,
+                                sampling_start_year=sampling_start_year,
+                                sampling_end_year=sampling_end_year,
+                                n_weather_samples=n_weather_samples,
+                                with_obs_year=with_obs_year)
+                        else:
+                            env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                                start_year = start_year, end_year = end_year)
 
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -83,7 +93,7 @@ class Train:
 
     def long_env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
-        n_weather_samples=100, fixed_weather = True, with_obs_year=False):
+        n_weather_samples=100, fixed_weather = True, with_obs_year=False, nonadaptive=False):
         """
         for single year testing we want to have an env that is identical to others but just a longer time horizon
         """
@@ -94,7 +104,8 @@ class Train:
                         sampling_end_year=self.config['sampling_end_year'],
                         n_weather_samples=self.config['n_weather_samples'],
                         fixed_weather = self.config['fixed_weather'],
-                        with_obs_year=self.config['with_obs_year'])
+                        with_obs_year=self.config['with_obs_year'],
+                        nonadaptive=self.config['with_obs_year'])
         return f
 
     def get_envs(self, n_procs):
@@ -116,7 +127,8 @@ class Train:
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'])
+            with_obs_year=self.config['with_obs_year'],
+            nonadaptive=self.config['with_obs_year'])
 
         #the out of sample weather env
         start_year = hold_out_sampling_start_year
@@ -131,7 +143,8 @@ class Train:
             sampling_end_year=hold_out_sampling_end_year,
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'])
+            with_obs_year=self.config['with_obs_year'],
+            nonadaptive=self.config['with_obs_year'])
 
         eval_env_train.training = False
         eval_env_train.norm_reward = False
@@ -180,7 +193,8 @@ class Train:
          sampling_end_year=self.config['sampling_end_year'],
          n_weather_samples=self.config['n_weather_samples'],
          fixed_weather = self.config['fixed_weather'],
-         with_obs_year=self.config['with_obs_year'])
+         with_obs_year=self.config['with_obs_year'],
+         nonadaptive=self.config['with_obs_year'] )
         if config["method"] == "A2C":
             model = A2C('MlpPolicy', train_env, verbose=0, tensorboard_log=self.dir)
         elif config["method"] == "PPO":
@@ -268,7 +282,8 @@ class Train:
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.config['with_obs_year'])
+            with_obs_year=self.config['with_obs_year'],
+            nonadaptive=self.config['with_obs_year'])
         for long_len in [2, 5, 10]:
             r_det, _ = evaluate_policy(model,
                                 long_env(long_len),
@@ -335,11 +350,12 @@ def make_multi_year(action_seq, n):
 if __name__ == '__main__':
 
 
-    config = dict(total_timesteps = 1000, eval_freq = 1000, run_id = 0,
+    config = dict(total_timesteps = 10000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
-                n_weather_samples=100, fixed_weather = False, with_obs_year = True, baseline=True)
+                n_weather_samples=100, fixed_weather = False, with_obs_year = True, 
+                baseline=False, nonadaptive=False)
 
     # modify the config so that if we do a 1 year experiment, we don't include obs year (not useful)
     if config['start_year'] == config['end_year']:
@@ -365,7 +381,7 @@ if __name__ == '__main__':
     
     trainer = Train(config)
 
-    #if only trying to get baselines...
+    #if trying to get baselines...
     if config['baseline']:
         trainer.eval_baselines()
     

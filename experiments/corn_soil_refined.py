@@ -210,9 +210,33 @@ def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start
     return smart_obs_corn_env
 
 
+def NonAdaptiveCorn(delta, n_actions, maxN, start_year, end_year, sampling_start_year, sampling_end_year,
+     n_weather_samples, fixed_weather, with_obs_year):
+    if fixed_weather:
+        large_obs_corn_env = CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+         start_year = start_year, end_year=end_year, with_obs_year=with_obs_year)
+    else:
+        large_obs_corn_env = CornSoilCropWeatherObsShuffled(delta=delta, n_actions=n_actions, maxN=maxN,
+            start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples, with_obs_year=with_obs_year)
+    s = large_obs_corn_env.reset()
 
+    from cyclesgym.envs.common import PartialObsEnv
+    target_obs = [
+                  'Y', # Years left
+                  'DOI' # Day of the year
+                  'N TO DATE'
+                 ]
 
-
+    mask = np.isin(np.asarray(large_obs_corn_env.observer.obs_names), target_obs)
+    if fixed_weather:
+        smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObs(delta=delta, n_actions=n_actions, maxN=maxN,
+            start_year = start_year, end_year=end_year, with_obs_year=with_obs_year), mask=mask)
+    else:
+        smart_obs_corn_env = PartialObsEnv(CornSoilCropWeatherObsShuffled(delta=delta, n_actions=n_actions, maxN=maxN,
+            start_year = start_year, end_year=end_year, sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year, n_weather_samples=n_weather_samples, with_obs_year=with_obs_year), mask=mask)
+    return smart_obs_corn_env
 
 
 
