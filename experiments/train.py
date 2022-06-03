@@ -244,7 +244,7 @@ class Train:
         expert_policy = OpenLoopPolicy(action_series_int)
         r, _, _, _ = _evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=20,
+                                n_eval_episodes=1,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
         return
@@ -279,7 +279,7 @@ class Train:
     def eval_baselines(self):
         ## evaluate baseline strategies on the train and test envs
         #make an env on 1 process for open loop policies and vis
-        eval_env_train, eval_env_test = self.get_envs(n_procs = self.config['n_process'])
+        eval_env_train, eval_env_test = self.get_envs(n_procs = 1)
         #  do not update moving averages at test time
         eval_env_train.training = False
         # reward normalization is not needed at test time
@@ -332,10 +332,10 @@ if __name__ == '__main__':
 
     config = dict(total_timesteps = 1000000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
-                method = "A2C", n_actions = 11, soil_env=True, start_year = 1980,
+                method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
                 n_weather_samples=100, fixed_weather = False,
-                n_process = 16, with_obs_year = True, baseline=False)
+                n_process = 16, with_obs_year = True, baseline=True)
 
     # modify the config so that if we do a 1 year experiment, we don't include obs year (not useful)
     if config['start_year'] == config['end_year']:
@@ -354,24 +354,24 @@ if __name__ == '__main__':
     trainer = Train(config)
 
     #if only trying to get baselines...
-    if config['baseline']:
+    if config['baseline':
         trainer.eval_baselines()
-    else:
-        model = trainer.train()
-        # Load the saved statistics
+    
+    model = trainer.train()
+    # Load the saved statistics
 
-        _, eval_env_test = trainer.get_envs(n_procs = 1)
+    _, eval_env_test = trainer.get_envs(n_procs = 1)
 
-        eval_env_test = VecNormalize.load(config['stats_path'], eval_env_test)
-        #  do not update moving averages at test time
-        eval_env_test.training = False
-        # reward normalization is not needed at test time
-        eval_env_test.norm_reward = False
-        
-        trainer.evaluate_log(model, eval_env_test)
+    eval_env_test = VecNormalize.load(config['stats_path'], eval_env_test)
+    #  do not update moving averages at test time
+    eval_env_test.training = False
+    # reward normalization is not needed at test time
+    eval_env_test.norm_reward = False
+    
+    trainer.evaluate_log(model, eval_env_test)
 
-        if config['start_year'] == config['end_year']:
-            trainer.one_year_eval(model)
+    if config['start_year'] == config['end_year']:
+        trainer.one_year_eval(model)
 
     
     
