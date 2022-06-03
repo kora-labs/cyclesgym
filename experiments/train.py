@@ -23,6 +23,7 @@ import sys
 
 from cyclesgym.dummy_policies import OpenLoopPolicy
 import expert
+import argparse
 
 
 class Train:
@@ -118,9 +119,14 @@ class Train:
             with_obs_year=self.config['with_obs_year'])
 
         #the out of sample weather env
+        start_year = hold_out_sampling_start_year
+        end_year = hold_out_sampling_start_year+duration
+        if self.config['fixed_weather']:
+            start_year = self.config['end_year'] + 1
+            end_year = 2015
         eval_env_test = self.env_maker(training = False, n_procs=n_procs,
             soil_env = self.config['soil_env'],
-            start_year = hold_out_sampling_start_year, end_year = hold_out_sampling_start_year+duration,
+            start_year = start_year, end_year = end_year,
             sampling_start_year=hold_out_sampling_start_year,
             sampling_end_year=hold_out_sampling_end_year,
             n_weather_samples=self.config['n_weather_samples'],
@@ -147,9 +153,9 @@ class Train:
             eval_freq=config['eval_freq'], deterministic=True, render=False,
             eval_prefix='eval_test_det')
         eval_callback_test_sto = EvalCallbackCustom(eval_env_test, best_model_save_path=None,
-            log_path=str(self.model_dir.joinpath('eval_test_det')),
+            log_path=str(self.model_dir.joinpath('eval_test_sto')),
             eval_freq=config['eval_freq'], deterministic=False, render=False,
-            eval_prefix='eval_test_det')
+            eval_prefix='eval_test_sto')
 
         eval_callback_det = EvalCallbackCustom(eval_env_train, best_model_save_path=None,
             log_path=str(self.model_dir.joinpath('eval_test_det')),
@@ -242,9 +248,9 @@ class Train:
     def eval_experts(self, action_series, eval_env, name):
         action_series_int = np.array(action_series, dtype=int)
         expert_policy = OpenLoopPolicy(action_series_int)
-        r, _, _, _ = _evaluate_policy(expert_policy,
+        r, _ = evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=1,
+                                n_eval_episodes=5,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
         return
@@ -262,13 +268,13 @@ class Train:
             fixed_weather = self.config['fixed_weather'],
             with_obs_year=self.config['with_obs_year'])
         for long_len in [2, 5, 10]:
-            r_det, _, _, _ = _evaluate_policy(model,
+            r_det, _ = evaluate_policy(model,
                                 long_env(long_len),
-                                n_eval_episodes=20,
+                                n_eval_episodes=5,
                                 deterministic=False)
-            r_sto, _, _, _ = _evaluate_policy(model,
+            r_sto, _ = evaluate_policy(model,
                                 long_env(long_len),
-                                n_eval_episodes=20,
+                                n_eval_episodes=5,
                                 deterministic=True)
             name = "long_eval_det"+str(long_len)
             wandb.log({f'eval/'+name: r_det})
@@ -330,12 +336,12 @@ def make_multi_year(action_seq, n):
 
 if __name__ == '__main__':
 
-    config = dict(total_timesteps = 1000000, eval_freq = 1000, run_id = 0,
+
+    config = dict(total_timesteps = 1000, eval_freq = 100, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 end_year = 1980, sampling_start_year=1980, sampling_end_year=2010,
-                n_weather_samples=100, fixed_weather = False,
-                n_process = 16, with_obs_year = True, baseline=True)
+                n_weather_samples=100, fixed_weather = False, with_obs_year = True, baseline=True)
 
     # modify the config so that if we do a 1 year experiment, we don't include obs year (not useful)
     if config['start_year'] == config['end_year']:
@@ -349,12 +355,22 @@ if __name__ == '__main__':
     save_code=True,
     )
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-np', '--n-process', type=int, default=1, metavar='N',
+                         help='input number of processes for training (default: 1)')
+    args = parser.parse_args()
+
+    #wandb.init(config={"lr": 0.1})
+    wandb.config.update(args)
+
     config = wandb.config
+
+    print(config)
     
     trainer = Train(config)
 
     #if only trying to get baselines...
-    if config['baseline':
+    if config['baseline']:
         trainer.eval_baselines()
     
     model = trainer.train()
