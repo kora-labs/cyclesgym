@@ -13,6 +13,7 @@ from eval import _evaluate_policy
 import gym
 from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting, CropPlanningFixedPlantingRandomWeather
+from cyclesgym.envs.crop_planning import CropPlanningFixedPlantingRandomWeatherRotationObserver, CropPlanningFixedPlantingRotationObserver
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import sys
@@ -62,20 +63,24 @@ class Train:
         eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
         eval_env_train = self.env_maker(start_year=self.config['train_start_year'],
                                         end_year=self.config['train_end_year'],
-                                        training=False)
+                                        training=False,
+                                        env_class=self.config['eval_env_class'])
 
         eval_env_new_years = self.env_maker(start_year=self.config['eval_start_year'],
                                             end_year=self.config['eval_end_year'],
-                                            training=False)
+                                            training=False,
+                                            env_class=self.config['eval_env_class'])
 
         eval_env_other_loc = self.env_maker(start_year=self.config['train_start_year'],
                                             end_year=self.config['train_end_year'],
                                             weather_file='NewHolland.weather',
-                                            training=False)
+                                            training=False,
+                                            env_class=self.config['eval_env_class'])
 
         eval_env_other_loc_long = self.env_maker(start_year=self.config['train_start_year'],
                                                  end_year=self.config['eval_end_year'] - 1,
-                                                 weather_file='NewHolland.weather',
+                                                 weather_file='NewHolland.weather', \
+                                                 env_class=self.config['eval_env_class'],
                                                  training=False)
 
         def get_callback(env, suffix, deterministic):
@@ -182,6 +187,9 @@ if __name__ == '__main__':
 
     parser.add_argument('-fw', '--fixed_weather', default=False,
                         help='Whether to use a fixed weather')
+    parser.add_argument('-na', '--non_adaptive', default=False,
+                        help='Whether to use a non-adaptive policy (observation space being only a trailing window of'
+                             'the crop rotation used so far')
     parser.add_argument('-s', '--seed', type=int, default=0, metavar='N',
                         help='The random seed used for all number generators')
 
@@ -196,14 +204,22 @@ if __name__ == '__main__':
     if args['fixed_weather'] == 'True':
         env_class = 'CropPlanningFixedPlanting'
         n_weather_samples = None
+        eval_env_class = 'CropPlanningFixedPlanting'
+        if args['non_adaptive'] == 'True':
+            env_class = 'CropPlanningFixedPlantingRotationObserver'
+            eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
     else:
         env_class = 'CropPlanningFixedPlantingRandomWeather'
         n_weather_samples = 1000
+        eval_env_class = 'CropPlanningFixedPlanting'
+        if args['non_adaptive'] == 'True':
+            env_class = 'CropPlanningFixedPlantingRandomWeatherRotationObserver'
+            eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
 
     config = dict(train_start_year=1980, train_end_year=1998, eval_start_year=1998, eval_end_year=2016,
                   total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
                   norm_reward=True, method="PPO", verbose=1, n_process=8, device='auto',
-                  env_class=env_class, n_weather_samples=n_weather_samples)
+                  env_class=env_class, eval_env_class=eval_env_class, n_weather_samples=n_weather_samples)
 
     config.update(args)
 

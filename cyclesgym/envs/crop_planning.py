@@ -1,5 +1,5 @@
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.observers import SoilNObserver
+from cyclesgym.envs.observers import SoilNObserver, CropRotationTrailingWindowObserver
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
 from cyclesgym.envs.implementers import RotationPlanter, RotationPlanterFixedPlanting
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager
@@ -120,7 +120,7 @@ class CropPlanning(CyclesEnv):
         r = self.rewarder.compute_reward(date=self.date, delta=self.delta)
 
         # Compute state
-        obs = self.observer.compute_obs(self.date)
+        obs = self.observer.compute_obs(self.date, action=action)
 
         # Compute
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -146,7 +146,9 @@ class CropPlanning(CyclesEnv):
 
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
-        return self.observer.compute_obs(self.date)
+        obs = self.observer.compute_obs(self.date, action=[-1, 0])
+        self.observer.reset()
+        return obs
 
 
 class CropPlanningFixedPlanting(CropPlanning):
@@ -237,3 +239,18 @@ class CropPlanningFixedPlantingRandomWeather(CropPlanningFixedPlanting):
             dest = self.input_dir.name.joinpath('weather.weather')
             self.weather_input_file = dest
             os.symlink(src, dest)
+
+
+class CropPlanningFixedPlantingRandomWeatherRotationObserver(CropPlanningFixedPlantingRandomWeather):
+
+    def _init_observer(self, *args, **kwargs):
+        self.observer = CropRotationTrailingWindowObserver(
+            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
+
+
+class CropPlanningFixedPlantingRotationObserver(CropPlanningFixedPlanting):
+
+    def _init_observer(self, *args, **kwargs):
+        self.observer = CropRotationTrailingWindowObserver(
+            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
+
