@@ -42,7 +42,7 @@ class Train:
     def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
         n_weather_samples=100, fixed_weather = True, with_obs_year=False,
-        nonadaptive=False):
+        nonadaptive=False, new_holland=False):
 
         def make_env():
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
@@ -55,7 +55,8 @@ class Train:
                             sampling_end_year=sampling_end_year,
                             n_weather_samples=n_weather_samples,
                             fixed_weather=fixed_weather,
-                            with_obs_year=with_obs_year)
+                            with_obs_year=with_obs_year,
+                            new_holland=new_holland)
                 else:
                     if soil_env:
                         env = CornSoilRefined(delta=7, maxN=150, n_actions=self.config['n_actions'],
@@ -64,7 +65,8 @@ class Train:
                             sampling_end_year=sampling_end_year,
                             n_weather_samples=n_weather_samples,
                             fixed_weather=fixed_weather,
-                            with_obs_year=with_obs_year)
+                            with_obs_year=with_obs_year,
+                            new_holland=new_holland)
                     else:
                         if fixed_weather:
                             env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
@@ -137,7 +139,7 @@ class Train:
         start_year = hold_out_sampling_start_year
         end_year = hold_out_sampling_start_year+duration
         if self.config['fixed_weather']:
-            end_year = 2015
+            end_year = self.config['sampling_end_year']
             start_year = end_year-duration
         eval_env_test = self.env_maker(training = False, n_procs=n_procs,
             soil_env = self.config['soil_env'],
@@ -196,13 +198,13 @@ class Train:
          n_weather_samples=self.config['n_weather_samples'],
          fixed_weather = self.config['fixed_weather'],
          with_obs_year=self.with_obs_year,
-         nonadaptive=self.config['nonadaptive'] )
+         nonadaptive=self.config['nonadaptive'])
 
         train_env.seed(self.config['seed'])
 
         eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
         duration = self.config['end_year'] - self.config['start_year']
-        total_timesteps = self.config["total_episodes"] * (53 + 52 * duration)
+        total_timesteps = self.config["total_years"] * 53
         n_steps = int(self.config['n_steps'] / self.config['n_process'])
 
         if config["method"] == "A2C":
@@ -272,12 +274,12 @@ class Train:
         ## create a plot of fertilizer cost in each year
         return mean_r_det
 
-    def eval_experts(self, action_series, eval_env, name):
+    def eval_openloop(self, action_series, eval_env, name):
         action_series_int = np.array(action_series, dtype=int)
         expert_policy = OpenLoopPolicy(action_series_int)
         r, _ = evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=5,
+                                n_eval_episodes=20,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
         return
@@ -341,17 +343,55 @@ class Train:
         cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
         organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
 
-        trainer.eval_experts(organic_exact_sequence, eval_env_train, "organic-train")
-        trainer.eval_experts(agro_exact_sequence, eval_env_train, "agro-train")
-        trainer.eval_experts(cycles_exact_sequence, eval_env_train, "cycles-train")
-        trainer.eval_experts(nonsense_exact_sequence, eval_env_train, "nonsense-train")
+        trainer.eval_openloop(organic_exact_sequence, eval_env_train, "organic-train")
+        trainer.eval_openloop(agro_exact_sequence, eval_env_train, "agro-train")
+        trainer.eval_openloop(cycles_exact_sequence, eval_env_train, "cycles-train")
+        trainer.eval_openloop(nonsense_exact_sequence, eval_env_train, "nonsense-train")
 
-        trainer.eval_experts(organic_exact_sequence, eval_env_test, "organic-test")
-        trainer.eval_experts(agro_exact_sequence, eval_env_test, "agro-test")
-        trainer.eval_experts(cycles_exact_sequence, eval_env_test, "cycles-test")
-        trainer.eval_experts(nonsense_exact_sequence, eval_env_test, "nonsense-test")
+        trainer.eval_openloop(organic_exact_sequence, eval_env_test, "organic-test")
+        trainer.eval_openloop(agro_exact_sequence, eval_env_test, "agro-test")
+        trainer.eval_openloop(cycles_exact_sequence, eval_env_test, "cycles-test")
+        trainer.eval_openloop(nonsense_exact_sequence, eval_env_test, "nonsense-test")
+
+        nh_env = self.env_maker(training = False, n_procs=1,
+            soil_env = self.config['soil_env'],
+            start_year = self.config['start_year'], end_year = self.config['end_year'],
+            sampling_start_year=self.config['sampling_start_year'],
+            sampling_end_year=self.config['sampling_end_year'],
+            n_weather_samples=self.config['n_weather_samples'],
+            fixed_weather = self.config['fixed_weather'],
+            with_obs_year=self.with_obs_year,
+            nonadaptive=self.config['nonadaptive'],
+            new_holland=True)
+
+        trainer.eval_openloop(organic_exact_sequence, nh_env, "organic-NH")
+        trainer.eval_openloop(agro_exact_sequence, nh_env, "agro-NH")
+        trainer.eval_openloop(cycles_exact_sequence, nh_env, "cycles-NH")
+        trainer.eval_openloop(nonsense_exact_sequence, nh_env, "nonsense-NH")
 
         return
+
+    def eval_nh(self,model):
+        """
+        evaluate the model on new holland training years
+        """
+        nh_env = self.env_maker(training = False, n_procs=1,
+            soil_env = self.config['soil_env'],
+            start_year = self.config['start_year'], end_year = self.config['end_year'],
+            sampling_start_year=self.config['sampling_start_year'],
+            sampling_end_year=self.config['sampling_end_year'],
+            n_weather_samples=self.config['n_weather_samples'],
+            fixed_weather = self.config['fixed_weather'],
+            with_obs_year=self.with_obs_year,
+            nonadaptive=self.config['nonadaptive'],
+            new_holland=True)
+        mean_r, _  = evaluate_policy(model,
+           env=nh_env,
+           n_eval_episodes=20,
+           deterministic=False)
+        wandb.log({'NH_return': mean_r})
+        return
+
 
 def make_multi_year(action_seq, n):
     # n is an int for number of years
@@ -364,20 +404,19 @@ if __name__ == '__main__':
     torch.manual_seed(RANDOM_SEED)
     env.seed(RANDOM_SEED)
     """
-
-    config = dict(total_episodes = 10000, eval_freq = 1000, run_id = 0,
+    config = dict(total_years = 3000, eval_freq = 1000, run_id = 0,
                 norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
-                sampling_start_year=1980, sampling_end_year=2010,
+                sampling_start_year=1980, sampling_end_year=2005,
                 n_weather_samples=100, 
-                baseline=False, n_steps = 2048, with_obs_year = True)
+                n_steps = 2048, with_obs_year = True)
     wandb.init(
     config=config,
     sync_tensorboard=True,
     project="agro-rl",
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
-    group="repeats_2"
+    group="repeats_7"
     )
 
     parser = argparse.ArgumentParser()
@@ -391,6 +430,8 @@ if __name__ == '__main__':
         help='Whether to use a fixed weather')
     parser.add_argument('-s', '--seed', type=int, default=0, metavar='N',
                          help='The random seed used for all number generators')
+    parser.add_argument('-b','--baseline', default=False, action='store_true',
+        help='Use to only run the baselines')
 
     args = parser.parse_args()
 
@@ -410,22 +451,25 @@ if __name__ == '__main__':
     #if trying to get baselines...
     if config['baseline']:
         trainer.eval_baselines()
-    
-    model = trainer.train()
-    # Load the saved statistics
+    else:
+        model = trainer.train()
+        # Load the saved statistics
 
-    _, eval_env_test = trainer.get_envs(n_procs = 1)
+        _, eval_env_test = trainer.get_envs(n_procs = 1)
 
-    eval_env_test = VecNormalize.load(config['stats_path'], eval_env_test)
-    #  do not update moving averages at test time
-    eval_env_test.training = False
-    # reward normalization is not needed at test time
-    eval_env_test.norm_reward = False
-    
-    trainer.evaluate_log(model, eval_env_test)
+        eval_env_test = VecNormalize.load(config['stats_path'], eval_env_test)
+        #  do not update moving averages at test time
+        eval_env_test.training = False
+        # reward normalization is not needed at test time
+        eval_env_test.norm_reward = False
+        
+        trainer.evaluate_log(model, eval_env_test)
 
-    if config['start_year'] == config['end_year']:
-        trainer.one_year_eval(model)
+        if config['start_year'] == config['end_year']:
+            trainer.one_year_eval(model)
+        trainer.eval_nh(model)
+
+
 
     
     

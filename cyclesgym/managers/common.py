@@ -1,7 +1,6 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-
 class Manager(ABC):
     def __init__(self, fname=None):
         if not self._valid_input_file(fname):
