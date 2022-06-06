@@ -6,6 +6,14 @@ import numpy as np
 from numpy import ndarray
 from stable_baselines3.common import base_class
 from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, VecMonitor, is_vecenv_wrapped
+from stable_baselines3.common.policies import obs_as_tensor
+
+
+def predict_proba(model, obs):
+    obs = obs_as_tensor(obs, model.policy.device)
+    dis = model.policy.get_distribution(obs)
+    probs = [d.probs.detach().numpy() for d in dis.distribution]
+    return probs
 
 
 def _evaluate_policy(
@@ -74,6 +82,7 @@ def _evaluate_policy(
     episode_rewards = []
     episode_lengths = []
     episode_actions = []
+    episode_probs = []
 
     episode_counts = np.zeros(n_envs, dtype="int")
     # Divides episodes among different sub environments in the vector as evenly as possible
@@ -83,6 +92,7 @@ def _evaluate_policy(
     current_lengths = np.zeros(n_envs, dtype="int")
     # current_actions = np.array([])
     current_actions = []
+    current_probs = []
     # current_actions = np.empty((episode_count_targets, n_envs))
     observations = env.reset()
     states = None
@@ -90,7 +100,9 @@ def _evaluate_policy(
     while (episode_counts < episode_count_targets).any():
         actions, states = model.predict(observations, state=states, episode_start=episode_starts,
                                         deterministic=deterministic)
+        probs = predict_proba(model, observations)
         current_actions.append(actions)
+        current_probs.append(probs)
         # current_actions = np.append(current_actions, actions)
         # current_actions[episode_counts] = actions
         observations, rewards, dones, infos = env.step(actions)
@@ -110,6 +122,7 @@ def _evaluate_policy(
 
                 if dones[i]:
                     actions_i = np.array(current_actions)[:, i]
+                    probs_i = current_probs
                     if is_monitor_wrapped:
                         # Atari wrapper can send a "done" signal when
                         # the agent loses a life, but it does not correspond
@@ -121,12 +134,14 @@ def _evaluate_policy(
                             episode_rewards.append(info["episode"]["r"])
                             episode_lengths.append(info["episode"]["l"])
                             episode_actions.append(actions_i)
+                            episode_probs.append(probs_i)
                             # Only increment at the real end of an episode
                             episode_counts[i] += 1
                     else:
                         episode_rewards.append(current_rewards[i])
                         episode_lengths.append(current_lengths[i])
                         episode_actions.append(actions_i)
+                        episode_probs.append(probs_i)
                         episode_counts[i] += 1
                     current_rewards[i] = 0
                     current_lengths[i] = 0
@@ -143,4 +158,4 @@ def _evaluate_policy(
             "Mean reward below threshold: " f"{mean_reward:.2f} < {reward_threshold:.2f}"
     if return_episode_rewards:
         return episode_rewards, episode_lengths, episode_actions, episode_rewards
-    return mean_reward, std_reward, episode_actions, episode_rewards
+    return mean_reward, std_reward, episode_actions, episode_rewards, episode_probs

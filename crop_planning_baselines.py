@@ -71,4 +71,4 @@ if __name__ == '__main__':
 
     #CropPlanningBaselines().test_equal(1980, 1998, weather_train_file)
     #CropPlanningBaselines().test_equal(1998, 2016, weather_train_file)
-    CropPlanningBaselines().test_equal(1980, 2015, weather_test_file)
+    CropPlanningBaselines().test_equal(1980, 1998, weather_test_file)
