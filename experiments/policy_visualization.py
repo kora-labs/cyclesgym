@@ -61,7 +61,7 @@ if __name__ == '__main__':
     train_env = manager.env_maker(training=False, start_year=1980, end_year=1998)
     test_env = manager.env_maker(training=False, start_year=1998, end_year=2016)
 
-    file = PROJECT_PATH.joinpath('logs/best_model')
+    file = PROJECT_PATH.joinpath('wandb/latest-run/files/models/eval_det_other_loc_long/best_model.zip')
     print(Path.is_file(file))
     model = PPO.load(file, device='cpu')
 
