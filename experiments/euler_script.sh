@@ -1,9 +1,10 @@
 #!/bin/bash
-while getopts f:s: flag
+while getopts f:s:n: flag
 do
     case "${flag}" in
         f) fw=${OPTARG};;
         s) seed=${OPTARG};;
+        n) na=${OPTARG};;
     esac
 done
 
@@ -12,8 +13,4 @@ cd $TMPDIR
 unzip cycles.zip
 cd $LS_SUBCWD
 
-echo $TMPDIR
-echo $LS_SUBCWD
-echo experiments/train.py -fw ${fw} --seed ${seed}
-
-python experiments/train.py -fw ${fw} --seed ${seed}
+python experiments/train.py -fw ${fw} -na ${na} --seed ${seed}
