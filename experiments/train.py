@@ -279,7 +279,7 @@ class Train:
         expert_policy = OpenLoopPolicy(action_series_int)
         r, _ = evaluate_policy(expert_policy,
                                 eval_env,
-                                n_eval_episodes=20,
+                                n_eval_episodes=100,
                                 deterministic=True)
         wandb.log({f'train/baseline/'+name: r})
         return
@@ -339,12 +339,16 @@ class Train:
         
         n = config['end_year'] - config['start_year']
         agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
+        print(agro_exact_sequence)
         nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)
         cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
         organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
-
+        print("organic")
         trainer.eval_openloop(organic_exact_sequence, eval_env_train, "organic-train")
+        print("agro")
         trainer.eval_openloop(agro_exact_sequence, eval_env_train, "agro-train")
+        print("cycles")
+        raise Exception
         trainer.eval_openloop(cycles_exact_sequence, eval_env_train, "cycles-train")
         trainer.eval_openloop(nonsense_exact_sequence, eval_env_train, "nonsense-train")
 
@@ -395,7 +399,7 @@ class Train:
 
 def make_multi_year(action_seq, n):
     # n is an int for number of years
-    return np.concatenate([action_seq, np.repeat(action_seq[1:], n)])
+    return np.concatenate([action_seq, np.tile(action_seq[1:], n)])
 
 
 if __name__ == '__main__':

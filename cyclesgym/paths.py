@@ -1,11 +1,10 @@
 import pathlib
-
 import os
-print(os.environ)
 __all__ = ['PROJECT_PATH', 'CYCLES_PATH', 'AGENTS_PATH', 'FIGURES_PATH', 'DATA_PATH']
 
 PROJECT_PATH = pathlib.Path(__file__).parents[1]
-CYCLES_PATH = pathlib.Path(os.environ['TMPDIR']).joinpath('cycles')  #PROJECT_PATH.joinpath('cycles')
+#CYCLES_PATH = pathlib.Path(os.environ['TMPDIR']).joinpath('cycles')  
+CYCLES_PATH = PROJECT_PATH.joinpath('cycles')
 AGENTS_PATH = PROJECT_PATH.joinpath('agents')
 FIGURES_PATH = PROJECT_PATH.joinpath('figures')
 DATA_PATH = PROJECT_PATH.joinpath('data')

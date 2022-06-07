@@ -35,7 +35,6 @@ class CropRewarder(object):
                 dollars_per_tonne = self.dollars_per_tonne[y_prev]
                 harvest = float(harverst_df[self.yield_column])  # Metric tonne per hectar
                 harvest_dollars_per_hectare = harvest * dollars_per_tonne
-
         return harvest_dollars_per_hectare
     
     def compute_reward(self, date, delta, action=None):

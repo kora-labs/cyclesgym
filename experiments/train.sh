@@ -20,5 +20,5 @@ do
 	bsub -W 72:00 -n 4 -R "rusage[mem=8000, scratch=2000]" "bash subrun.sh -n yes -s $i -f yes -y 1984 -b no"
 	bsub -W 72:00 -n 4 -R "rusage[mem=8000, scratch=2000, ngpus_excl_p=1]" "bash subrun.sh -n no -s $i -f yes -y 1984 -b no"
 	bsub -W 72:00 -n 4 -R "rusage[mem=8000, scratch=2000]" "bash subrun.sh -n yes -s $i -f yes -y 1989 -b no"
-	bsub -W 72:00 -n 4 -R "rusage[mem=8000, scratch=2000, ngpus_excl_p=1]" "bash subrun.sh -n yes -s $i -f no -y 1989 -b no"	
+	bsub -W 72:00 -n 4 -R "rusage[mem=8000, scratch=2000, ngpus_excl_p=1]" "bash subrun.sh -n no -s $i -f no -y 1989 -b no"	
 done
