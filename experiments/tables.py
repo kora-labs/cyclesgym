@@ -1,5 +1,7 @@
 import pandas as pd
 import wandb
+import csv
+
 api = wandb.Api()
 
 # Project is specified by <entity/project-name>
@@ -31,7 +33,23 @@ runs_df = pd.concat([pd.DataFrame(summary_at_max), pd.DataFrame(summary_list), p
 columns = ['max_eval_det/mean_reward', 'max_eval_det_new_years/mean_reward',
            'max_eval_det_other_loc/mean_reward', 'max_eval_det_other_loc_long/mean_reward']
 
+
 results_mean = runs_df.groupby(['fixed_weather', 'env_class']).mean()[columns]
 results_std = runs_df.groupby(['fixed_weather', 'env_class']).std()[columns]
-results_mean.to_csv('means.csv', float_format='%.2f')
-results_std.to_csv('stds.csv', float_format='%.2f')
+
+raws = [('True', 'CropPlanningFixedPlanting'),
+        ('True', 'CropPlanningFixedPlantingRotationObserver'),
+        ('False', 'CropPlanningFixedPlantingRandomWeather'),
+        ('False', 'CropPlanningFixedPlantingRandomWeatherRotationObserver')]
+results_mean = results_mean.reindex(raws)
+results_std = results_std.reindex(raws)
+
+results_mean.to_csv('means.csv', float_format='%.0f')
+results_std.to_csv('stds.csv', float_format='%.0f')
+
+pm = pd.DataFrame([[' \small{$\pm$ ']*4]*4, index=results_mean.index, columns=results_mean.columns)
+curl = pd.DataFrame([['} ']*4]*4, index=results_mean.index, columns=results_mean.columns)
+table_string = results_mean.astype(int).astype('string') + pm + results_std.astype(int).astype('string') + curl
+table_string.to_csv('table.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
+
+#TODO: report profit per year, and mi, mean, max instead of mean pm std
