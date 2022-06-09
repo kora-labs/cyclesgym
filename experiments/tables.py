@@ -33,23 +33,41 @@ runs_df = pd.concat([pd.DataFrame(summary_at_max), pd.DataFrame(summary_list), p
 columns = ['max_eval_det/mean_reward', 'max_eval_det_new_years/mean_reward',
            'max_eval_det_other_loc/mean_reward', 'max_eval_det_other_loc_long/mean_reward']
 
+for c,l in zip(columns, [19., 19., 19., 35]):
+    runs_df[c] = runs_df[c] / l
 
-results_mean = runs_df.groupby(['fixed_weather', 'env_class']).mean()[columns]
-results_std = runs_df.groupby(['fixed_weather', 'env_class']).std()[columns]
 
-raws = [('True', 'CropPlanningFixedPlanting'),
+groupby = runs_df.groupby(['fixed_weather', 'env_class'])
+
+results_mean = groupby.mean()[columns]
+results_std = groupby.std()[columns]
+results_min = groupby.min()[columns]
+results_max = groupby.max()[columns]
+
+rows = [('True', 'CropPlanningFixedPlanting'),
         ('True', 'CropPlanningFixedPlantingRotationObserver'),
         ('False', 'CropPlanningFixedPlantingRandomWeather'),
         ('False', 'CropPlanningFixedPlantingRandomWeatherRotationObserver')]
-results_mean = results_mean.reindex(raws)
-results_std = results_std.reindex(raws)
 
-results_mean.to_csv('means.csv', float_format='%.0f')
-results_std.to_csv('stds.csv', float_format='%.0f')
+results_mean = results_mean.reindex(rows) / 1000.
+results_std = results_std.reindex(rows) / 1000.
+results_min = results_min.reindex(rows) / 1000.
+results_max = results_max.reindex(rows) / 1000.
 
+
+results_mean.to_csv('means.csv', float_format='%.3f')
+results_std.to_csv('stds.csv', float_format='%.3f')
+round_digit = 2
 pm = pd.DataFrame([[' \small{$\pm$ ']*4]*4, index=results_mean.index, columns=results_mean.columns)
 curl = pd.DataFrame([['} ']*4]*4, index=results_mean.index, columns=results_mean.columns)
-table_string = results_mean.astype(int).astype('string') + pm + results_std.astype(int).astype('string') + curl
-table_string.to_csv('table.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
+table_string_std = results_mean.round(round_digit).astype('string') + \
+                   pm + results_std.round(round_digit).astype('string') + curl
+table_string_std.to_csv('table_std.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
 
-#TODO: report profit per year, and mi, mean, max instead of mean pm std
+par = pd.DataFrame([[' \small{(']*4]*4, index=results_mean.index, columns=results_mean.columns)
+comma = pd.DataFrame([[',']*4]*4, index=results_mean.index, columns=results_mean.columns)
+curl = pd.DataFrame([[')} ']*4]*4, index=results_mean.index, columns=results_mean.columns)
+table_string_min_max = results_mean.round(round_digit).astype('string') + \
+                       par + results_min.round(round_digit).astype('string') + comma + \
+                        results_max.round(round_digit).astype('string') + curl
+table_string_min_max.to_csv('table_min_max.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
