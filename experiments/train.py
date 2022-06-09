@@ -29,38 +29,7 @@ class Train:
         self.config = experiment_config
         # rl config is configured from wandb config
 
-    def env_maker(self, env_class=CropPlanningFixedPlanting,
-                  training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
-                  weather_file='RockSprings.weather', n_weather_samples=None):
-        if not training:
-            n_procs = 1
-
-        if isinstance(env_class, str):
-            env_class = globals()[env_class]
-
-        def make_env():
-            # creates a function returning the basic env. Used by SubprocVecEnv later to create a
-            # vectorized environment
-            def _f():
-                env_conf = dict(start_year=start_year, end_year=end_year, soil_file=soil_file,
-                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
-                if n_weather_samples is not None:
-                    env_conf['n_weather_samples'] = n_weather_samples
-
-                env = env_class(**env_conf)
-                env = gym.wrappers.RecordEpisodeStatistics(env)
-                return env
-
-            return _f
-
-        env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
-        env = VecMonitor(env)
-        norm_reward = (training and self.config['norm_reward'])
-        env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
-        return env
-
-    def create_callback(self, model_dir):
-        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
+    def create_envs(self):
         eval_env_train = self.env_maker(start_year=self.config['train_start_year'],
                                         end_year=self.config['train_end_year'],
                                         training=False,
@@ -83,6 +52,43 @@ class Train:
                                                  env_class=self.config['eval_env_class'],
                                                  training=False)
 
+        return [eval_env_train, eval_env_new_years, eval_env_other_loc, eval_env_other_loc_long]
+
+    def env_maker(self, env_class=CropPlanningFixedPlanting,
+                  training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
+                  weather_file='RockSprings.weather', n_weather_samples=None):
+        if not training:
+            n_procs = 1
+
+        if isinstance(env_class, str):
+            env_class = globals()[env_class]
+
+        def make_env():
+            # creates a function returning the basic env. Used by SubprocVecEnv later to create a
+            # vectorized environment
+            def _f():
+                env_conf = dict(start_year=start_year, end_year=end_year, soil_file=soil_file,
+                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
+                if n_weather_samples is not None:
+                    env_conf['n_weather_samples'] = n_weather_samples
+
+                env = env_class(**env_conf)
+
+                env = gym.wrappers.RecordEpisodeStatistics(env)
+                return env
+
+            return _f
+
+        env = SubprocVecEnv([make_env() for i in range(n_procs)], start_method='fork')
+        env = VecMonitor(env)
+        norm_reward = (training and self.config['norm_reward'])
+        env = VecNormalize(env, norm_obs=True, norm_reward=norm_reward, clip_obs=5000., clip_reward=5000.)
+        return env
+
+    def create_callback(self, model_dir):
+        eval_freq = int(self.config['eval_freq'] / self.config['n_process'])
+
+        [eval_env_train, eval_env_new_years, eval_env_other_loc, eval_env_other_loc_long] = self.create_envs()
         def get_callback(env, suffix, deterministic):
             return EvalCallbackCustom(env, best_model_save_path=str(model_dir.joinpath(suffix)),
                                       log_path=str(model_dir.joinpath(suffix)), eval_freq=eval_freq,

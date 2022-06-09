@@ -82,6 +82,7 @@ def _evaluate_policy(
     episode_rewards = []
     episode_lengths = []
     episode_actions = []
+    episode_action_rewards = []
     episode_probs = []
 
     episode_counts = np.zeros(n_envs, dtype="int")
@@ -93,6 +94,7 @@ def _evaluate_policy(
     # current_actions = np.array([])
     current_actions = []
     current_probs = []
+
     # current_actions = np.empty((episode_count_targets, n_envs))
     observations = env.reset()
     states = None
@@ -117,6 +119,7 @@ def _evaluate_policy(
                 info = infos[i]
                 episode_starts[i] = done
 
+                episode_action_rewards.append(rewards[i])
                 if callback is not None:
                     callback(locals(), globals())
 
@@ -153,9 +156,10 @@ def _evaluate_policy(
     mean_reward = np.mean(episode_rewards)
     std_reward = np.std(episode_rewards)
     episode_actions = np.array(episode_actions)
+
     if reward_threshold is not None:
         assert mean_reward > reward_threshold, \
             "Mean reward below threshold: " f"{mean_reward:.2f} < {reward_threshold:.2f}"
     if return_episode_rewards:
         return episode_rewards, episode_lengths, episode_actions, episode_rewards
-    return mean_reward, std_reward, episode_actions, episode_rewards, episode_probs
+    return mean_reward, std_reward, episode_actions, episode_rewards, episode_probs, episode_action_rewards
