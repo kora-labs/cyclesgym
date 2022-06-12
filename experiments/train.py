@@ -21,6 +21,7 @@ from corn_soil_refined import CornSoilRefined, NonAdaptiveCorn
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from pathlib import Path
+from cyclesgym.paths import PROJECT_PATH
 import sys
 
 from cyclesgym.dummy_policies import OpenLoopPolicy
@@ -113,7 +114,7 @@ class Train:
                         nonadaptive=self.config['nonadaptive'])
         return f
 
-    def get_envs(self, n_procs):
+    def get_envs(self, n_procs, new_holland=False, plus_horizon=0):
         """
         Returns some environments given n_procs. Used because I often want the same settings
         but a different n_procs for policy visualization and baseline evaluations
@@ -127,13 +128,14 @@ class Train:
         # EvalCallBack
         eval_env_train = self.env_maker(training = False, n_procs=n_procs,
             soil_env = self.config['soil_env'],
-            start_year = self.config['start_year'], end_year = self.config['end_year'],
+            start_year = self.config['start_year'], end_year = self.config['end_year']+plus_horizon,
             sampling_start_year=self.config['sampling_start_year'],
             sampling_end_year=self.config['sampling_end_year'],
             n_weather_samples=self.config['n_weather_samples'],
             fixed_weather = self.config['fixed_weather'],
             with_obs_year=self.with_obs_year,
-            nonadaptive=self.config['nonadaptive'])
+            nonadaptive=self.config['nonadaptive'],
+            new_holland=new_holland)
 
         #the out of sample weather env
         start_year = hold_out_sampling_start_year
@@ -143,13 +145,14 @@ class Train:
             start_year = end_year-duration
         eval_env_test = self.env_maker(training = False, n_procs=n_procs,
             soil_env = self.config['soil_env'],
-            start_year = start_year, end_year = end_year,
+            start_year = start_year, end_year = end_year+plus_horizon,
             sampling_start_year=hold_out_sampling_start_year,
             sampling_end_year=hold_out_sampling_end_year,
             n_weather_samples=self.config['n_weather_samples'],
-            fixed_weather = self.config['fixed_weather'],
+            fixed_weather = False,
             with_obs_year=self.with_obs_year,
-            nonadaptive=self.config['nonadaptive'])
+            nonadaptive=self.config['nonadaptive'],
+            new_holland=new_holland)
 
         eval_env_train.training = False
         eval_env_train.norm_reward = False
@@ -249,7 +252,7 @@ class Train:
                                                                                        env=eval_env,
                                                                                        n_eval_episodes=5,
                                                                                        deterministic=False)
-    
+
         T = actions_stoc.shape[1]
         wandb.log({'deterministic_return': mean_r_det,
                    'stochastic_return_mean': mean_r_stoc,
@@ -288,24 +291,23 @@ class Train:
         """
         An evaluation to test the one year policy on 2,5,10 years
         """
-        long_env = self.long_env_maker(training = False, n_procs = self.config['n_process'],
-            soil_env = self.config['soil_env'],
-            start_year = self.config['start_year'], end_year = self.config['end_year'],
-            sampling_start_year=self.config['sampling_start_year'],
-            sampling_end_year=self.config['sampling_end_year'],
-            n_weather_samples=self.config['n_weather_samples'],
-            fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.with_obs_year,
-            nonadaptive=self.config['nonadaptive'])
-        for long_len in [2, 5, 10]:
+        for long_len in [2, 5]:
+            #env = long_env(long_len)
+            env, _  = trainer.get_envs(n_procs = 1, plus_horizon=long_len-1)
+            env = VecNormalize.load(self.config['stats_path'], env)
+            env.training = False
+            env.norm_reward = False
+            
             r_det, _ = evaluate_policy(model,
-                                long_env(long_len),
-                                n_eval_episodes=5,
-                                deterministic=False)
-            r_sto, _ = evaluate_policy(model,
-                                long_env(long_len),
-                                n_eval_episodes=5,
+                                env,
+                                n_eval_episodes=20,
                                 deterministic=True)
+            
+            r_sto, _ = evaluate_policy(model,
+                                env,
+                                n_eval_episodes=20,
+                                deterministic=False)
+            
             name = "long_eval_det"+str(long_len)
             wandb.log({f'eval/'+name: r_det})
             name = "long_eval_sto"+str(long_len)
@@ -339,16 +341,11 @@ class Train:
         
         n = config['end_year'] - config['start_year']
         agro_exact_sequence = make_multi_year(agro_exact_sequence, n)
-        print(agro_exact_sequence)
         nonsense_exact_sequence = make_multi_year(nonsense_exact_sequence, n)
         cycles_exact_sequence = make_multi_year(cycles_exact_sequence, n)
         organic_exact_sequence = make_multi_year(organic_exact_sequence, n)
-        print("organic")
         trainer.eval_openloop(organic_exact_sequence, eval_env_train, "organic-train")
-        print("agro")
         trainer.eval_openloop(agro_exact_sequence, eval_env_train, "agro-train")
-        print("cycles")
-        raise Exception
         trainer.eval_openloop(cycles_exact_sequence, eval_env_train, "cycles-train")
         trainer.eval_openloop(nonsense_exact_sequence, eval_env_train, "nonsense-train")
 
@@ -379,16 +376,11 @@ class Train:
         """
         evaluate the model on new holland training years
         """
-        nh_env = self.env_maker(training = False, n_procs=1,
-            soil_env = self.config['soil_env'],
-            start_year = self.config['start_year'], end_year = self.config['end_year'],
-            sampling_start_year=self.config['sampling_start_year'],
-            sampling_end_year=self.config['sampling_end_year'],
-            n_weather_samples=self.config['n_weather_samples'],
-            fixed_weather = self.config['fixed_weather'],
-            with_obs_year=self.with_obs_year,
-            nonadaptive=self.config['nonadaptive'],
-            new_holland=True)
+        nh_env, _  = trainer.get_envs(n_procs = 1, new_holland=True)
+        nh_env = VecNormalize.load(self.config['stats_path'], nh_env)
+        nh_env.training = False
+        nh_env.norm_reward = False
+        
         mean_r, _  = evaluate_policy(model,
            env=nh_env,
            n_eval_episodes=20,
@@ -409,7 +401,7 @@ if __name__ == '__main__':
     env.seed(RANDOM_SEED)
     """
     config = dict(total_years = 3000, eval_freq = 1000, run_id = 0,
-                norm_reward = True,  stats_path = 'runs/vec_normalize.pkl',
+                norm_reward = True,
                 method = "PPO", n_actions = 11, soil_env=True, start_year = 1980,
                 sampling_start_year=1980, sampling_end_year=2005,
                 n_weather_samples=100, 
@@ -420,8 +412,10 @@ if __name__ == '__main__':
     project="agro-rl",
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
-    group="repeats_7"
+    group="group_name"
     )
+
+    
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-np', '--n-process', type=int, default=1, metavar='N',
@@ -437,26 +431,41 @@ if __name__ == '__main__':
     parser.add_argument('-b','--baseline', default=False, action='store_true',
         help='Use to only run the baselines')
 
+    parser.add_argument('-p','--posthoc', default=False, action='store_true',
+        help='Parse to read in a set of weights that are evaluated')
+
     args = parser.parse_args()
 
     wandb.config.update(args)
 
+    
+    if wandb.config['posthoc']:
+        stats_path = 'data/vec_norms/vec_normalize_1xw45c9p.pkl'
+    else:
+        stats_path = 'runs/vec_normalize_' + str(wandb.run.id) + '.pkl' 
+    
+    wandb.config.update({'stats_path': stats_path})
 
     config = wandb.config
 
     set_random_seed(config['seed'])
     np.random.seed(config['seed'])
     random.seed(config['seed'])
-
+    print("status")
     #if we do a 1 year experiment, we don't include obs year (not useful)
     with_obs_year = config['with_obs_year'] and (config['start_year'] != config['end_year'])
     trainer = Train(config, with_obs_year)
-
+    
     #if trying to get baselines...
     if config['baseline']:
         trainer.eval_baselines()
     else:
-        model = trainer.train()
+        if config['posthoc']:
+            file = PROJECT_PATH.joinpath('experiments/data/model.zip')
+            model = PPO.load(file, device='cpu')
+        else:
+            model = trainer.train()
+
         # Load the saved statistics
 
         _, eval_env_test = trainer.get_envs(n_procs = 1)
@@ -468,10 +477,14 @@ if __name__ == '__main__':
         eval_env_test.norm_reward = False
         
         trainer.evaluate_log(model, eval_env_test)
-
+        
         if config['start_year'] == config['end_year']:
             trainer.one_year_eval(model)
+        
         trainer.eval_nh(model)
+
+
+
 
 
 

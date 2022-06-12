@@ -27,8 +27,10 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
                  ):
         self.rotation_size = end_year - start_year + 1
         self.use_reinit = use_reinit
+        
         if new_holland:
             weather_file = 'NewHolland.weather'
+        
         CyclesEnv.__init__(self, 
                           SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
