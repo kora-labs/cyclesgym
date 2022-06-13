@@ -103,8 +103,6 @@ def adapt_weather_year(weather_manager: WeatherManager,
 
     # Validate input
     if not target_year_range.size == original_years.size:
-        print(target_year_range)
-        print(original_years)
         raise ValueError(f'Target year range should be of the same size as '
                          f'original years ({original_years.size}). It is of'
                          f'size {target_year_range.size} instead')

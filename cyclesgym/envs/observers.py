@@ -124,7 +124,8 @@ class CropObserver(DailyOutputObserver):
 class NToDateObserver(Observer):
 
     def __init__(self,
-                 end_year: int, with_year = False):
+                 end_year: int,
+                 with_year: bool = False):
         super(NToDateObserver, self).__init__(end_year)
         self.N_to_date = 0
         self.Nobs = 2

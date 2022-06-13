@@ -24,7 +24,6 @@ class CropRewarder(object):
         # Did we harvest between this and previous time step?
         df = self.season_manager.season_df
         harverst_df = df.loc[(df['YEAR'] == y_prev) & (df['CROP'] == self.crop_name)]
-        #harvest on 244. plant on 110
         harvest_dollars_per_hectare = 0
         if not harverst_df.empty:
             harverst_doy = harverst_df.iloc[0]['DOY']
