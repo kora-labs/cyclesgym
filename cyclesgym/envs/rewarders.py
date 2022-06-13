@@ -24,7 +24,6 @@ class CropRewarder(object):
         # Did we harvest between this and previous time step?
         df = self.season_manager.season_df
         harverst_df = df.loc[(df['YEAR'] == y_prev) & (df['CROP'] == self.crop_name)]
-
         harvest_dollars_per_hectare = 0
         if not harverst_df.empty:
             harverst_doy = harverst_df.iloc[0]['DOY']
@@ -35,7 +34,6 @@ class CropRewarder(object):
                 dollars_per_tonne = self.dollars_per_tonne[y_prev]
                 harvest = float(harverst_df[self.yield_column])  # Metric tonne per hectar
                 harvest_dollars_per_hectare = harvest * dollars_per_tonne
-
         return harvest_dollars_per_hectare
     
     def compute_reward(self, date, delta, action=None):
