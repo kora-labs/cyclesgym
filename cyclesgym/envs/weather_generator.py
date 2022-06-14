@@ -200,7 +200,7 @@ def adapt_weather_year(weather_manager: WeatherManager,
 
     # Read years in input
     original_years = np.asarray(mutables['YEAR'].unique())
-    grouped_by_year = list(mutables.groupby(by='YEAR'))
+    grouped_by_year = list(mutables.groupby(by='YEAR', sort=False))
     target_year_range = np.asarray(target_year_range)
 
     # Validate input
