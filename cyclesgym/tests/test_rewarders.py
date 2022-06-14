@@ -1,9 +1,8 @@
 import datetime
 import unittest
-import numpy as np
 
 from cyclesgym.envs.rewarders import CropRewarder
-from cyclesgym.pricing_utils import crop_prices
+from cyclesgym.utils.pricing_utils import crop_prices
 from cyclesgym.managers import *
 
 from cyclesgym.paths import TEST_PATH

@@ -1,6 +1,7 @@
 import pandas as pd
 import wandb
 import csv
+from cyclesgym.paths import PROJECT_PATH
 
 api = wandb.Api()
 
@@ -54,15 +55,16 @@ results_std = results_std.reindex(rows) / 1000.
 results_min = results_min.reindex(rows) / 1000.
 results_max = results_max.reindex(rows) / 1000.
 
-
-results_mean.to_csv('means.csv', float_format='%.3f')
-results_std.to_csv('stds.csv', float_format='%.3f')
+tables_dir = PROJECT_PATH.joinpath('tables')
+results_mean.to_csv(tables_dir.joinpath('means.csv'), float_format='%.3f')
+results_std.to_csv(tables_dir.joinpath('stds.csv'), float_format='%.3f')
 round_digit = 2
 pm = pd.DataFrame([[' \small{$\pm$ ']*4]*4, index=results_mean.index, columns=results_mean.columns)
 curl = pd.DataFrame([['} ']*4]*4, index=results_mean.index, columns=results_mean.columns)
 table_string_std = results_mean.round(round_digit).astype('string') + \
                    pm + results_std.round(round_digit).astype('string') + curl
-table_string_std.to_csv('table_std.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
+table_string_std.to_csv(tables_dir.joinpath('table_std.csv'), header=False, index=False, sep=str('&'),
+                        quoting=csv.QUOTE_NONE)
 
 par = pd.DataFrame([[' \small{(']*4]*4, index=results_mean.index, columns=results_mean.columns)
 comma = pd.DataFrame([[',']*4]*4, index=results_mean.index, columns=results_mean.columns)
@@ -70,4 +72,5 @@ curl = pd.DataFrame([[')} ']*4]*4, index=results_mean.index, columns=results_mea
 table_string_min_max = results_mean.round(round_digit).astype('string') + \
                        par + results_min.round(round_digit).astype('string') + comma + \
                         results_max.round(round_digit).astype('string') + curl
-table_string_min_max.to_csv('table_min_max.csv', header=False, index=False, sep=str('&'), quoting=csv.QUOTE_NONE)
+table_string_min_max.to_csv(tables_dir.joinpath('table_min_max.csv'), header=False, index=False, sep=str('&'),
+                            quoting=csv.QUOTE_NONE)

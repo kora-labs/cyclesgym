@@ -1,6 +1,6 @@
 from datetime import timedelta
 from cyclesgym.envs.utils import date2ydoy, ydoy2date
-from cyclesgym.pricing_utils import crop_prices, N_price_dollars_per_kg, crop_type
+from cyclesgym.utils.pricing_utils import crop_prices, N_price_dollars_per_kg, crop_type
 import datetime
 
 __all__ = ['CropRewarder']

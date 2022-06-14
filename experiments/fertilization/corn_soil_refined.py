@@ -1,11 +1,13 @@
 from cyclesgym.envs.corn import Corn, CornShuffledWeather
-import numpy as np 
-
 import cyclesgym.envs.observers as observers
 from cyclesgym.managers import SoilNManager
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 from cyclesgym.envs.common import PartialObsEnv
+from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.envs.weather_generator import WeatherShuffler
+import numpy as np
+
 
 class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
     # Need to write N to output
@@ -72,11 +74,28 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
         # Create directory to store weather
         # TODO: Rename create_sim_id if used here as well
         self.env_id = create_sim_id()
-        self.weather_temporary_directory = MyTemporaryDirectory(
-            path=self._get_weather_dir())
+
+        base_weather_file = CYCLES_PATH.joinpath(
+            'input', self.ctrl_base_manager.ctrl_dict['WEATHER_FILE'])
+
+        sim_start_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_START_YEAR']
+        sim_end_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_END_YEAR']
+        target_year_range = np.arange(sim_start_year,
+                                      sim_end_year + 1)
+
+        self.weather_generator = WeatherShuffler(
+            n_weather_samples=n_weather_samples,
+            sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year,
+            base_weather_file=base_weather_file,
+            target_year_range=target_year_range
+        )
 
         # Generate weather files by reshuffling
-        self._generate_weather()
+        self.weather_generator.generate_weather()
+
     
     # Add N manager to fields
     def _post_init_setup(self):
@@ -101,6 +120,7 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
+
 
 class CornSoilCropWeatherObs(Corn):
     # Need to write N to output
@@ -177,6 +197,7 @@ class CornSoilCropWeatherObs(Corn):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
+
 
 def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start_year, sampling_end_year,
      n_weather_samples, fixed_weather, with_obs_year, new_holland=False):

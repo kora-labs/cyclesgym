@@ -1,13 +1,8 @@
 """
 Functions that output Fixed policies (action sequences)
 """
-
-import pathlib
-import warnings
-import shutil
 import numpy as np
-import sys
-import time
+
 
 def create_action_sequence(doy, weight, maxN, n_actions, delta_t, n_weeks=53):
     doy = np.atleast_1d(doy)

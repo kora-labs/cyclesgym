@@ -1,15 +1,12 @@
 import os.path
-import time
 import numpy as np
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.env_util import make_vec_env
-from cyclesgym.utils import EvalCallbackCustom
+from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
+from cyclesgym.utils.wandb_utils import WANDB_ENTITY, CROP_PLANNING_EXPERIMENT
 from pathlib import Path
-from eval import _evaluate_policy
 import gym
 from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting, CropPlanningFixedPlantingRandomWeather
@@ -191,9 +188,9 @@ class Train:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-fw', '--fixed_weather', default=False,
+    parser.add_argument('-fw', '--fixed_weather', default='False',
                         help='Whether to use a fixed weather')
-    parser.add_argument('-na', '--non_adaptive', default=False,
+    parser.add_argument('-na', '--non_adaptive', default='False',
                         help='Whether to use a non-adaptive policy (observation space being only a trailing window of'
                              'the crop rotation used so far')
     parser.add_argument('-s', '--seed', type=int, default=0, metavar='N',
@@ -205,8 +202,6 @@ if __name__ == '__main__':
     np.random.seed(args['seed'])
     random.seed(args['seed'])
 
-    print(args)
-    print(CYCLES_PATH, os.path.isfile(CYCLES_PATH))
     if args['fixed_weather'] == 'True':
         env_class = 'CropPlanningFixedPlanting'
         n_weather_samples = None
@@ -232,15 +227,13 @@ if __name__ == '__main__':
     wandb.init(
         config=config,
         sync_tensorboard=True,
-        project="experiments_crop_planning",
-        entity='koralabs',
+        project=CROP_PLANNING_EXPERIMENT,
+        entity=WANDB_ENTITY,
         monitor_gym=True,  # automatically upload gym environements' videos
         save_code=True,
     )
 
     config = wandb.config
-
-    print(config)
 
     trainer = Train(config)
     model, eval_env = trainer.train()
@@ -252,5 +245,4 @@ if __name__ == '__main__':
     # reward normalization is not needed at test time
     eval_env.norm_reward = False
 
-    #trainer.evaluate_log(model, eval_env)
 
