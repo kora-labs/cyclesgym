@@ -1,11 +1,12 @@
 from cyclesgym.envs.corn import Corn, CornShuffledWeather
-import numpy as np 
-
 import cyclesgym.envs.observers as observers
 from cyclesgym.managers import SoilNManager
 from cyclesgym.envs.common import CyclesEnv
 from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 from cyclesgym.envs.common import PartialObsEnv
+
+import numpy as np
+
 
 class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
     # Need to write N to output
@@ -102,6 +103,7 @@ class CornSoilCropWeatherObsShuffled(CornShuffledWeather):
             observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
 
+
 class CornSoilCropWeatherObs(Corn):
     # Need to write N to output
     def __init__(self,
@@ -177,6 +179,7 @@ class CornSoilCropWeatherObs(Corn):
             observers.SoilNObserver(soil_n_manager=self.soil_n_manager, end_year=end_year),
             observers.NToDateObserver(end_year=end_year, with_year=self.with_obs_year)
                                            ])
+
 
 def CornSoilRefined(delta, n_actions, maxN, start_year, end_year, sampling_start_year, sampling_end_year,
      n_weather_samples, fixed_weather, with_obs_year, new_holland=False):

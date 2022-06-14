@@ -1,37 +1,18 @@
-import wandb
 from stable_baselines3 import PPO
 from train import Train
-from eval import _evaluate_policy
-from pathlib import Path
+from cyclesgym.utils import _evaluate_policy
 from cyclesgym.paths import PROJECT_PATH
+from cyclesgym.utils.plot_utils import set_up_plt
 import numpy as np
 import matplotlib.pyplot as plt
-from cyclesgym.envs.implementers import RotationPlanter
-import pandas as pd
 import wandb
-import csv
-import pathlib
 from matplotlib.cm import get_cmap
 
-
-plt.rcParams['text.usetex'] = True
-
-SMALL_SIZE = 16
-MEDIUM_SIZE = 20
-BIGGER_SIZE = 24
-
-plt.rc('font', size=MEDIUM_SIZE)         # controls default text sizes
-plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+set_up_plt()
 
 
 def plot_crop_planning_policy_prob(episode_probs):
     color = get_cmap('Accent').colors
-
     crop_prob = np.array(list(zip(*episode_probs))[0]).squeeze()
     planting_prob = np.array(list(zip(*episode_probs))[1]).squeeze()
     plt.stackplot(1 + np.arange(crop_prob.shape[0]), *crop_prob.T)
@@ -44,7 +25,6 @@ def plot_crop_planning_policy_prob(episode_probs):
 
     plt.stackplot(1 + np.arange(planting_prob.shape[0]), *planting_prob.T,
                   colors=color[:planting_prob.shape[0]])
-    #plt.colorbar()
     plt.xticks(1 + np.arange(planting_prob.shape[0]))
     plt.xlabel('Years')
     plt.ylabel('Probability')
@@ -126,6 +106,5 @@ if __name__ == '__main__':
 
             for env, eval_test in zip(envs, ['train', 'rs98', 'nh98', 'nh15']):
                 get_plot(model, env, run, eval_env_class, eval_test)
-            #plot_crop_planning_policy_prob(episode_probs[0])
 
 

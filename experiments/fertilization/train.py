@@ -1,8 +1,5 @@
-import time
 import numpy as np
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
-# from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
-
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
@@ -11,10 +8,9 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.utils import set_random_seed
-
-from cyclesgym.utils import EvalCallbackCustom
-
-from eval import _evaluate_policy
+from cyclesgym.envs.corn import Corn
+from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
+from cyclesgym.utils.wandb_utils import WANDB_ENTITY, FERTILIZATION_EXPERIMENT
 import gym
 from cyclesgym.envs.corn import CornShuffledWeather
 from corn_soil_refined import CornSoilRefined, NonAdaptiveCorn
@@ -29,6 +25,7 @@ import expert
 import argparse
 import random
 
+
 class Train:
     """ Trainer object to wrap model training and handle environment creation, evaluation """
 
@@ -38,7 +35,6 @@ class Train:
         self.dir = wandb.run.dir
         self.model_dir = Path(self.dir).joinpath('models')
         # rl config is configured from wandb config
-
 
     def env_maker(self, training = True, n_procs = 1, soil_env = False, start_year = 1980, end_year = 1980,
         sampling_start_year=1980, sampling_end_year=2013,
@@ -409,7 +405,8 @@ if __name__ == '__main__':
     wandb.init(
     config=config,
     sync_tensorboard=True,
-    project="agro-rl",
+    project=FERTILIZATION_EXPERIMENT,
+    entity=WANDB_ENTITY,
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
     group="group_name"
