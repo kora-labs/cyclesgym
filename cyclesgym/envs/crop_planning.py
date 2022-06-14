@@ -1,8 +1,11 @@
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.observers import SoilNObserver
+from cyclesgym.envs.observers import SoilNObserver, CropRotationTrailingWindowObserver
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
-from cyclesgym.envs.implementers import RotationPlanter
+from cyclesgym.envs.implementers import RotationPlanter, RotationPlanterFixedPlanting
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager
+from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.envs.weather_generator import WeatherShuffler
+
 from gym import spaces
 from typing import Tuple
 import numpy as np
@@ -12,7 +15,14 @@ from pathlib import Path
 
 
 class CropPlanning(CyclesEnv):
-    def __init__(self, start_year, end_year, rotation_crops):
+    def __init__(self,
+                 start_year,
+                 end_year,
+                 rotation_crops,
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather'
+                 ):
+
         super().__init__(SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
                          ROTATION_SIZE=end_year-start_year,
@@ -35,13 +45,14 @@ class CropPlanning(CyclesEnv):
                          CROP_FILE='GenericCrops.crop',
                          OPERATION_FILE='CornSilageSoyWheat.operation',
                          #TODO: right now the operation file is totally ignored
-                         SOIL_FILE='GenericHagerstown.soil',
-                         WEATHER_FILE='RockSprings.weather',
+                         SOIL_FILE=soil_file,
+                         WEATHER_FILE=weather_file,
                          REINIT_FILE='N / A',
                          delta=365)
-        self._post_init_setup()
-        self._generate_action_space(len(rotation_crops))
         self.rotation_crops = rotation_crops
+        self.reset()
+        self._generate_observation_space()
+        self._generate_action_space(len(rotation_crops))
 
     def _generate_action_space(self, n_actions):
         self.action_space = spaces.MultiDiscrete([n_actions, 14, 10, 10])
@@ -49,9 +60,9 @@ class CropPlanning(CyclesEnv):
 
     def _generate_observation_space(self):
         self.observation_space = spaces.Box(
-            low=np.array(SoilNObserver.lower_bound, dtype=np.float32),
-            high=np.array(SoilNObserver.lower_bound, dtype=np.float32),
-            shape=SoilNObserver.lower_bound.shape,
+            low=np.array(self.observer.lower_bound, dtype=np.float32),
+            high=np.array(self.observer.lower_bound, dtype=np.float32),
+            shape=self.observer.lower_bound.shape,
             dtype=np.float32)
 
     def _init_input_managers(self):
@@ -109,7 +120,7 @@ class CropPlanning(CyclesEnv):
         r = self.rewarder.compute_reward(date=self.date, delta=self.delta)
 
         # Compute state
-        obs = self.observer.compute_obs(self.date)
+        obs = self.observer.compute_obs(self.date, action=action)
 
         # Compute
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -135,4 +146,111 @@ class CropPlanning(CyclesEnv):
 
         # Set to zero all pre-existing fertilization for N
         self.implementer.reset()
-        return self.observer.compute_obs(self.date)
+        obs = self.observer.compute_obs(self.date, action=[-1, 0])
+        self.observer.reset()
+        return obs
+
+
+class CropPlanningFixedPlanting(CropPlanning):
+
+    def _generate_action_space(self, n_actions):
+        self.action_space = spaces.MultiDiscrete([n_actions, 14])
+        self.n_actions = n_actions
+
+    def _init_implementer(self, *args, **kwargs):
+        self.implementer = RotationPlanterFixedPlanting(
+            operation_manager=self.op_manager,
+            operation_fname=self.op_file,
+            rotation_crops=self.rotation_crops,
+            start_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
+        )
+
+
+class CropPlanningFixedPlantingRandomWeather(CropPlanningFixedPlanting):
+
+    def __init__(self,
+                 start_year,
+                 end_year,
+                 rotation_crops,
+                 soil_file='GenericHagerstown.soil',
+                 weather_file='RockSprings.weather',
+                 sampling_start_year=None,
+                 sampling_end_year=None,
+                 n_weather_samples=3,
+                 ):
+        """
+        Parameters
+        ----------
+        sampling_start_year: int
+            Lower end of the year range to sample the weather
+        sampling_end_year: int
+            Upper end of the year range to sample the weather (included for
+            consistency with start year)
+        soil_file: str
+            Base soil file
+        weather_file: str
+            Base weather file
+        start_year: int
+            Year to start the simulation from
+        end_year:
+            Year to end the simulation at (included)
+        n_weather_samples: int
+            Number of different weather samples
+        """
+        self.weather_generator = None
+        super().__init__(start_year,
+                         end_year,
+                         rotation_crops,
+                         soil_file=soil_file,
+                         weather_file=weather_file)
+
+        # Create weather generator
+        base_weather_file = CYCLES_PATH.joinpath(
+            'input', self.ctrl_base_manager.ctrl_dict['WEATHER_FILE'])
+
+        sim_start_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_START_YEAR']
+        sim_end_year = self.ctrl_base_manager.ctrl_dict[
+            'SIMULATION_END_YEAR']
+        target_year_range = np.arange(sim_start_year,
+                                      sim_end_year + 1)
+        if sampling_start_year is None:
+            sampling_start_year = start_year
+        if sampling_end_year is None:
+            sampling_end_year = end_year
+
+        self.weather_generator = WeatherShuffler(
+            n_weather_samples=n_weather_samples,
+            sampling_start_year=sampling_start_year,
+            sampling_end_year=sampling_end_year,
+            base_weather_file=base_weather_file,
+            target_year_range=target_year_range
+        )
+
+        # Generate weather files by reshuffling
+        self.weather_generator.generate_weather()
+
+    def _create_weather_input_file(self):
+        # Symlink to one of the sampled weather files
+        if self.weather_generator is None:
+            super()._create_weather_input_file()
+        else:
+            src = self.weather_generator.sample_weather_path()
+            dest = self.input_dir.name.joinpath('weather.weather')
+            self.weather_input_file = dest
+            os.symlink(src, dest)
+
+
+class CropPlanningFixedPlantingRandomWeatherRotationObserver(CropPlanningFixedPlantingRandomWeather):
+
+    def _init_observer(self, *args, **kwargs):
+        self.observer = CropRotationTrailingWindowObserver(
+            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
+
+
+class CropPlanningFixedPlantingRotationObserver(CropPlanningFixedPlanting):
+
+    def _init_observer(self, *args, **kwargs):
+        self.observer = CropRotationTrailingWindowObserver(
+            end_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR'])
+

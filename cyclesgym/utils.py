@@ -1,13 +1,18 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import time
 import pandas as pd
-import gym
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
+
+
+import os
+from typing import Optional, Union
+
+import gym
+import numpy as np
+
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
-from typing import Optional, Union
-import os
+
 
 eps = 1e-8
 
@@ -96,7 +101,7 @@ def diff_pd(df1, df2):
         changed_to = df2.values[difference_locations]
         return pd.DataFrame({'from': changed_from, 'to': changed_to},
                             index=changed.index)
-
+    
 
 class EvalCallbackCustom(EvalCallback):
 
@@ -104,7 +109,6 @@ class EvalCallbackCustom(EvalCallback):
             self,
             eval_env: Union[gym.Env, VecEnv],
             callback_on_new_best: Optional[BaseCallback] = None,
-            callback_after_eval: Optional[BaseCallback] = None,
             n_eval_episodes: int = 5,
             eval_freq: int = 10000,
             log_path: Optional[str] = None,
@@ -117,7 +121,6 @@ class EvalCallbackCustom(EvalCallback):
     ):
         super(EvalCallbackCustom, self).__init__(eval_env=eval_env,
                                                  callback_on_new_best=callback_on_new_best,
-                                                 callback_after_eval=callback_after_eval,
                                                  n_eval_episodes=n_eval_episodes,
                                                  eval_freq=eval_freq,
                                                  log_path=log_path,
@@ -130,10 +133,7 @@ class EvalCallbackCustom(EvalCallback):
 
     def _on_step(self) -> bool:
 
-        continue_training = True
-
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
-
             # Sync training and eval env if there is VecNormalize
             if self.model.get_vec_normalize_env() is not None:
                 try:
@@ -183,9 +183,11 @@ class EvalCallbackCustom(EvalCallback):
             self.last_mean_reward = mean_reward
 
             if self.verbose > 0:
-                print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
+                print(
+                    f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
                 print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
             # Add to current Logger
+
             self.logger.record(self.eval_prefix + "/mean_reward", float(mean_reward))
             self.logger.record(self.eval_prefix + "/mean_ep_length", mean_ep_length)
 
@@ -197,6 +199,7 @@ class EvalCallbackCustom(EvalCallback):
 
             # Dump log so the evaluation results are printed with the correct timestep
             self.logger.record(self.eval_prefix + "/time/total_timesteps", self.num_timesteps, exclude="tensorboard")
+
             self.logger.dump(self.num_timesteps)
 
             if mean_reward > self.best_mean_reward:
@@ -205,12 +208,8 @@ class EvalCallbackCustom(EvalCallback):
                 if self.best_model_save_path is not None:
                     self.model.save(os.path.join(self.best_model_save_path, "best_model"))
                 self.best_mean_reward = mean_reward
-                # Trigger callback on new best model, if needed
-                if self.callback_on_new_best is not None:
-                    continue_training = self.callback_on_new_best.on_step()
+                # Trigger callback if needed
+                if self.callback is not None:
+                    return self._on_event()
 
-            # Trigger callback after every evaluation, if needed
-            if self.callback is not None:
-                continue_training = continue_training and self._on_event()
-
-        return continue_training
+        return True

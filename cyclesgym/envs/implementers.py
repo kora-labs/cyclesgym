@@ -440,7 +440,7 @@ class RotationPlanter(Planter):
 
         doy = 90 + doy * 7
         end_doy = doy + end_doy * 7
-        max_smc = float(max_smc / 10)
+        max_smc = float((1 + max_smc) / 10.)
 
         operation_det = {'DOY': doy,
                          'CROP': self.affected_crops[crop_categorical],
@@ -451,4 +451,13 @@ class RotationPlanter(Planter):
     def implement_action(self, date: datetime.date, crop_categorical: int, doy: int,
                          END_DOY: int, MAX_SMC: int):
         operation_det = self.convert_action_to_dict(crop_categorical, doy, END_DOY, MAX_SMC)
+        return super(RotationPlanter, self).implement_action(date, operation_det)
+
+
+class RotationPlanterFixedPlanting(RotationPlanter):
+
+    def implement_action(self, date: datetime.date, crop_categorical: int, doy: int):
+        operation_det = self.convert_action_to_dict(crop_categorical, doy, 0, 0)
+        operation_det['END_DOY'] = -999
+        operation_det['MAX_SMC'] = -999
         return super(RotationPlanter, self).implement_action(date, operation_det)

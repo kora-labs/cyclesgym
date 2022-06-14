@@ -27,12 +27,14 @@ soy_beans_price_dollars_per_tonne = {y: SOYBEAN_BUSHEL_PER_TONNE * soy_beans_pri
 
 #crop prices in $ per tonne
 crop_prices = {'CornRM.90': corn_price_dollars_per_tonne,
+               'CornRM.100': corn_price_dollars_per_tonne,
                'SoybeanMG.5': soy_beans_price_dollars_per_tonne,
                'SoybeanMG.3': soy_beans_price_dollars_per_tonne,
                'CornSilageRM.90': corn_silage_price_dollars_per_tonne
                }
 
 crop_type = {'CornRM.90': 'GRAIN YIELD',
+             'CornRM.100': 'GRAIN YIELD',
              'CornSilageRM.90': 'FORAGE YIELD',
              'SoybeanMG.5': 'GRAIN YIELD',
              'SoybeanMG.3': 'GRAIN YIELD'

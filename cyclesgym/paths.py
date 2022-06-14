@@ -1,5 +1,5 @@
 import pathlib
-
+import os
 
 __all__ = ['PROJECT_PATH', 'CYCLES_PATH', 'AGENTS_PATH', 'FIGURES_PATH', 'DATA_PATH']
 

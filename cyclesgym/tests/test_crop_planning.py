@@ -7,6 +7,7 @@ import subprocess
 from cyclesgym.managers import *
 from cyclesgym.utils import diff_pd
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
+import time
 
 
 class TestCropPlanning(unittest.TestCase):
@@ -40,6 +41,7 @@ class TestCropPlanning(unittest.TestCase):
         env.reset()
         year = 0
 
+        start = time.time()
         while True:
             a = policy[year % 2]
             _, _, done, _ = env.step(a)
@@ -49,10 +51,11 @@ class TestCropPlanning(unittest.TestCase):
 
         crop_from_env_1 = env.crop_output_manager[0]
         crop_from_env_2 = env.crop_output_manager[1]
+        print(time.time() - start)
         return crop_from_env_1, crop_from_env_2, crop_from_sim_1, crop_from_sim_2
 
     def test_equal(self):
-        policy = [(0, 0, 10, 10), (1, 2, 8, 10)]
+        policy = [(0, 0, 10, 9), (1, 2, 8, 9)]
 
         crop_from_env_1, crop_from_env_2, crop_from_sim_1, crop_from_sim_2 = self._test_policy(policy)
 

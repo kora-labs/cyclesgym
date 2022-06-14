@@ -32,7 +32,8 @@ class CropRewarder(object):
             if previous_date < harvest_date <= date:
                 # Compute harvest profit
                 dollars_per_tonne = self.dollars_per_tonne[y_prev]
-                harvest = float(harverst_df[self.yield_column])  # Metric tonne per hectar
+                harvest = harverst_df[self.yield_column].sum()
+                # Metric tonne per hectare
                 harvest_dollars_per_hectare = harvest * dollars_per_tonne
         return harvest_dollars_per_hectare
     

@@ -94,6 +94,9 @@ class DailyOutputObserver(Observer):
         self.Nobs = obs.size
         return obs.to_numpy(dtype=float)
 
+    def reset(self):
+        pass
+
 
 class CropObserver(DailyOutputObserver):
 
@@ -195,3 +198,25 @@ def compound_observer(obs_list: list):
     return Compound(obs_list)
 
 
+class CropRotationTrailingWindowObserver(Observer):
+
+    def __init__(self,
+                 end_year: int):
+        super(CropRotationTrailingWindowObserver, self).__init__(end_year)
+        self.Nobs = 36
+        self.lower_bound = np.full((self.Nobs,), -np.inf)
+        self.upper_bound = np.full((self.Nobs,), np.inf)
+        self.reset()
+
+    def compute_obs(self,
+                    date: datetime.date,
+                    action: [int]):
+
+        crop_categorical = action[0]
+        self.window[self.last_year] = crop_categorical
+        self.last_year = self.last_year + 1
+        return self.window
+
+    def reset(self):
+        self.window = np.array([-1]*self.Nobs)
+        self.last_year = 0
