@@ -46,3 +46,6 @@ If you also want to install some basic libraries to solve the environment, subst
 
 **Note**: The [pygmo library](https://esa.github.io/pygmo2/) installed with the ENV_SOLVERS option may give problems 
 when installed via pip on Mac or Windows, see [here](https://esa.github.io/pygmo2/install.html). 
+
+### Pre-defined environments
+For an explanation of our pre-defined environments and how to use them, see  [here](predefined_envs.md)
