@@ -8,7 +8,7 @@ from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.common import PartialObsEnv
 from cyclesgym.envs.utils import date2ydoy
 from cyclesgym.managers import *
-from cyclesgym.utils import compare_env, maximum_absolute_percentage_error
+from cyclesgym.utils.utils import compare_env, maximum_absolute_percentage_error
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 
 TEST_FILENAMES = ['NCornTest.ctrl',

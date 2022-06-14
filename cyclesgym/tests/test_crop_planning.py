@@ -1,11 +1,10 @@
-from cyclesgym.utils import run_env
 from cyclesgym.envs.crop_planning import CropPlanning
 import unittest
 import shutil
 import subprocess
 
-from cyclesgym.managers import *
-from cyclesgym.utils import diff_pd
+from cyclesgym.managers import CropManager
+from cyclesgym.utils.utils import diff_pd
 from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 import time
 
