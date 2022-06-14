@@ -44,21 +44,19 @@ class CropPlanningBaselines(object):
         return crop_from_env_1, crop_from_env_2, rewards
 
     def test_equal(self, start, end, weather_file):
-        rotation_policy = [(1, 2), (0, 1)] * (end - start + 1)
+        long_rotation = [(1, 2), (1, 2), (0, 1)] * (end - start)
+        short_rotation = [(1, 2), (0, 1)] * (end - start + 1)
         only_soy = [(1, 2)] * (end - start + 1)
         only_corn = [(0, 1)] * (end - start + 1)
-        long_rotation = [(1, 2), (1, 2), (1, 2), (1, 2), (0, 1)] * (end - start)
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(long_rotation,  start, end, weather_file)
-        print(start, end, weather_file, sum(rewards))
 
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(rotation_policy,  start, end, weather_file)
-        print(start, end, weather_file, sum(rewards))
+        def test_policy(policy, text):
+            crop_from_env_1, crop_from_env_2, rewards = self._test_policy(policy,  start, end, weather_file)
+            print(text, start, end, weather_file, sum(rewards) / (end - start + 1))
 
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_soy,  start, end, weather_file)
-        print(start, end, weather_file, sum(rewards))
-
-        crop_from_env_1, crop_from_env_2, rewards = self._test_policy(only_corn,  start, end, weather_file)
-        print(start, end, weather_file, sum(rewards))
+        test_policy(long_rotation, 'long_rotation')
+        test_policy(short_rotation, 'short rotation')
+        test_policy(only_soy, 'only soy')
+        test_policy(only_corn, 'only_corn')
 
 
 if __name__ == '__main__':
@@ -69,6 +67,7 @@ if __name__ == '__main__':
     weather_train_file = 'RockSprings.weather'
     weather_test_file = 'NewHolland.weather'
 
-    #CropPlanningBaselines().test_equal(1980, 1998, weather_train_file)
-    #CropPlanningBaselines().test_equal(1998, 2016, weather_train_file)
+    CropPlanningBaselines().test_equal(1980, 1998, weather_train_file)
+    CropPlanningBaselines().test_equal(1998, 2016, weather_train_file)
     CropPlanningBaselines().test_equal(1980, 1998, weather_test_file)
+    CropPlanningBaselines().test_equal(1980, 2015, weather_test_file)
