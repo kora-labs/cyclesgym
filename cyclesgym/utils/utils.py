@@ -104,7 +104,25 @@ def diff_pd(df1, df2):
     
 
 class EvalCallbackCustom(EvalCallback):
+    """ Callback for evaluating an agent. Mostly inherits from SB3 EvalCallback. Adds eval_prefix
+    argument for specifying the directory rewards are logged to. 
+    https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py
+    
+    No methods are extended. Only those overridden are listed. 
 
+    ...
+
+    Attributes Added
+    ----------
+    eval_prefix : str = 'eval'
+        the directory name for rewards to be saved to during _on_step(). 
+
+    Methods Overridden
+    -------
+    _on_step():
+        Evaluates agent in specified environment. Overridden to allow eval_prefix to specify directory to save to.
+
+    """
     def __init__(
             self,
             eval_env: Union[gym.Env, VecEnv],
@@ -132,7 +150,7 @@ class EvalCallbackCustom(EvalCallback):
         self.eval_prefix = eval_prefix
 
     def _on_step(self) -> bool:
-
+        """Evaluates agent in eval_env. Overridden to allow eval_prefix to specify directory to save to. """
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
             # Sync training and eval env if there is VecNormalize
             if self.model.get_vec_normalize_env() is not None:
