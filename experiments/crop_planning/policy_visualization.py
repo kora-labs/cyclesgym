@@ -71,7 +71,7 @@ def plot_crop_planning_policy_det(episode_actions, episode_rewards, run, eval_en
 
     ax[0].bar(x, np.array(episode_rewards)/1000.,
               color=[color[c] for c in crop])
-    ax[0].set_ylabel('Year reward [k$]')
+    ax[0].set_ylabel('Year reward [k\$]')
     ax[0].set_title(title)
 
     ax[1].scatter(x, planting_date, color=[color[c] for c in crop],
