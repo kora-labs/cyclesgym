@@ -73,7 +73,6 @@ class OperationManager(InputFileManager):
 
     def save(self, fname, force=True):
         self.sort_operation()
-        #print(self._to_str())
         super().save(fname, force)
 
     def count_same_day_events(self, year, doy):

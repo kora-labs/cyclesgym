@@ -178,7 +178,6 @@ class Fertilizer(Implementer):
         """
         doy = 1
         rerun_cycles = False
-
         for op_k, op_v in self.operation_manager.op_dict.items():
             if op_k[-1] == 'FIXED_FERTILIZATION':
                 start_year = op_k[0]
