@@ -19,7 +19,7 @@ conda activate cyclesgym
 Then, clone the repo and change working directory
 
 ```bash
-git clone https://gitlab.inf.ethz.ch/matteotu/cyclesgym.git
+git clone https://github.com/kora-labs/cyclesgym.git
 cd cyclesgym
 ```
 
