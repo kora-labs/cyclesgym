@@ -99,11 +99,6 @@ class TestCornEnv(unittest.TestCase):
         # Should test reward in no fertilization case to avoid old bug
         pass
 
-
-    @staticmethod
-    def _call_cycles(ctrl):
-        subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_PATH)
-
     def test_fast_multiyear_against_continuous_multiyear(self):
         self.START_YEAR = 1980
         self.END_YEAR = 1983
