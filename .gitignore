@@ -4,6 +4,7 @@ tables
 figures
 agents
 
+notebooks/.ipynb_checkpoints
 .idea
 .ipynb_checkpoints
 __pycache__/
