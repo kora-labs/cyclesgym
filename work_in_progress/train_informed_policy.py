@@ -3,11 +3,11 @@ import numpy as np
 import pygmo as pg
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from cyclesgym.dummy_policies import OpenLoopPolicy
+from cyclesgym.policies.dummy_policies import OpenLoopPolicy
 from cyclesgym.envs import PartialObsCornEnv
-from cyclesgym.informed_policy import InformedPolicy
+from cyclesgym.policies.informed_policy import InformedPolicy
 
-from cyclesgym.paths import FIGURES_PATH
+from cyclesgym.utils.paths import FIGURES_PATH
 
 
 class informed_policy_problem(object):

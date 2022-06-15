@@ -1,12 +1,8 @@
 import numpy as np
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.vec_env import VecMonitor
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.utils import set_random_seed
 from cyclesgym.envs.corn import Corn
 from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
@@ -17,10 +13,9 @@ from corn_soil_refined import CornSoilRefined, NonAdaptiveCorn
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from pathlib import Path
-from cyclesgym.paths import PROJECT_PATH
-import sys
+from cyclesgym.utils.paths import PROJECT_PATH
 
-from cyclesgym.dummy_policies import OpenLoopPolicy
+from cyclesgym.policies.dummy_policies import OpenLoopPolicy
 import expert
 import argparse
 import random

@@ -8,7 +8,7 @@ from stable_baselines3.common.monitor import Monitor, get_monitor_files, \
     LoadMonitorResultsError
 import matplotlib.pyplot as plt
 
-from cyclesgym.paths import AGENTS_PATH
+from cyclesgym.utils.paths import AGENTS_PATH
 
 
 def my_load_results(path: Path, window_size: int=5) -> pd.DataFrame:

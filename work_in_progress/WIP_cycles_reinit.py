@@ -1,4 +1,3 @@
-import pathlib
 import stat
 import subprocess
 import pandas as pd
@@ -6,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import shutil
 
-from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.utils.paths import CYCLES_PATH
 
 
 def call_cycles(control_file, doy=None):

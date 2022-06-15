@@ -1,9 +1,8 @@
-from cyclesgym.utils import run_env
 from cyclesgym.envs.crop_planning import CropPlanningFixedPlanting
-import unittest
+from cyclesgym.utils.paths import CYCLES_PATH, TEST_PATH
+
 import shutil
 import subprocess
-from cyclesgym.paths import CYCLES_PATH, TEST_PATH
 import time
 
 

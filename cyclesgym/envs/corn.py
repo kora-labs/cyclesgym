@@ -4,9 +4,8 @@ from cyclesgym.envs.observers import compound_observer, CropObserver, \
     WeatherObserver, NToDateObserver
 from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
     NProfitabilityRewarder
-from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
-from cyclesgym.paths import CYCLES_PATH
-from cyclesgym.envs.weather_generator import generate_random_weather, WeatherShuffler
+from cyclesgym.utils.paths import CYCLES_PATH
+from cyclesgym.envs.weather_generator import WeatherShuffler
 import os
 
 from cyclesgym.envs.implementers import *

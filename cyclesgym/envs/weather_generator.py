@@ -6,9 +6,9 @@ import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from cyclesgym.paths import CYCLES_PATH
 from cyclesgym.managers import WeatherManager
 from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
+from cyclesgym.utils.paths import CYCLES_PATH
 
 __all__ = ['shuffle_weather', 'adapt_weather_year', 'generate_random_weather',
            'WeatherShuffler']
@@ -258,7 +258,7 @@ def generate_random_weather(weather_manager: WeatherManager,
 
 
 if __name__ == '__main__':
-    from cyclesgym.paths import CYCLES_PATH
+    from cyclesgym.utils.paths import CYCLES_PATH
     import time
 
     # Load base weather data

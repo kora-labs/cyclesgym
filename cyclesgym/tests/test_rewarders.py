@@ -5,7 +5,7 @@ from cyclesgym.envs.rewarders import CropRewarder
 from cyclesgym.utils.pricing_utils import crop_prices
 from cyclesgym.managers import *
 
-from cyclesgym.paths import TEST_PATH
+from cyclesgym.utils.paths import TEST_PATH
 
 
 class TestRewarders(unittest.TestCase):

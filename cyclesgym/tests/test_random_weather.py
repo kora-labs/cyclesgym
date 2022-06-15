@@ -3,12 +3,11 @@ import shutil
 import subprocess
 import unittest
 import unittest.mock as mock
-import numpy as np
-from cyclesgym.envs.corn import Corn, CornShuffledWeather
+from cyclesgym.envs.corn import CornShuffledWeather
 from cyclesgym.envs.utils import date2ydoy
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager
-from cyclesgym.envs.weather_generator import WeatherShuffler, generate_random_weather
-from cyclesgym.paths import CYCLES_PATH, TEST_PATH
+from cyclesgym.envs.weather_generator import WeatherShuffler
+from cyclesgym.utils.paths import CYCLES_PATH, TEST_PATH
 
 TEST_FILENAMES = ['CornRandomWeatherTest.ctrl',
                   'NCornTest.operation']
@@ -133,3 +132,7 @@ class TestShuffleWeather(unittest.TestCase):
     @staticmethod
     def _call_cycles(ctrl):
         subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_PATH)
+
+
+if __name__ == '__main__':
+    unittest.main()

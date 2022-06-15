@@ -2,9 +2,9 @@ from cyclesgym.envs.corn import Corn, CornShuffledWeather
 import cyclesgym.envs.observers as observers
 from cyclesgym.managers import SoilNManager
 from cyclesgym.envs.common import CyclesEnv
-from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
+from cyclesgym.envs.utils import create_sim_id
 from cyclesgym.envs.common import PartialObsEnv
-from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.utils.paths import CYCLES_PATH
 from cyclesgym.envs.weather_generator import WeatherShuffler
 import numpy as np
 

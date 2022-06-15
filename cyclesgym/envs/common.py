@@ -8,7 +8,7 @@ import numpy as np
 from gym import spaces
 
 from cyclesgym.managers import *
-from cyclesgym.paths import CYCLES_PATH, PROJECT_PATH
+from cyclesgym.utils.paths import CYCLES_PATH
 from cyclesgym.envs.utils import *
 
 

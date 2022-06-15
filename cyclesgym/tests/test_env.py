@@ -1,15 +1,15 @@
 import pathlib
 import shutil
-import subprocess
 import unittest
 import numpy as np
+import subprocess
 
 from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.common import PartialObsEnv
 from cyclesgym.envs.utils import date2ydoy
 from cyclesgym.managers import *
 from cyclesgym.utils.utils import compare_env, maximum_absolute_percentage_error
-from cyclesgym.paths import CYCLES_PATH, TEST_PATH
+from cyclesgym.utils.paths import CYCLES_PATH, TEST_PATH
 
 TEST_FILENAMES = ['NCornTest.ctrl',
                   'NCornTest.operation',
@@ -120,6 +120,10 @@ class TestCornEnv(unittest.TestCase):
         max_ape = maximum_absolute_percentage_error(obs_cont, obs_impr)
         print(f'Maximum percentage error: {max_ape} %')
         self.assertLess(max_ape, 1, f'Maximum percentage error: {max_ape} % is less then the threshold 1')
+
+    @staticmethod
+    def _call_cycles(ctrl):
+        subprocess.run(['./Cycles', '-b', ctrl], cwd=CYCLES_PATH)
 
 
 class TestPartiallyObservableEnv(unittest.TestCase):

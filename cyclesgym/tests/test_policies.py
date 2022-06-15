@@ -1,5 +1,4 @@
-from cyclesgym.informed_policy import InformedPolicy
-from pathlib import Path
+from cyclesgym.policies.informed_policy import InformedPolicy
 import unittest
 import gym
 from gym import spaces

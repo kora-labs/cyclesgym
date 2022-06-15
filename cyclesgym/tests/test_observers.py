@@ -5,7 +5,7 @@ import numpy as np
 from cyclesgym.envs.observers import WeatherObserver, CropObserver, compound_observer, NToDateObserver, SoilNObserver
 from cyclesgym.managers import *
 
-from cyclesgym.paths import TEST_PATH
+from cyclesgym.utils.paths import TEST_PATH
 
 
 class TestObservers(unittest.TestCase):

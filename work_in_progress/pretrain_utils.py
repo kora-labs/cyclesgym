@@ -5,7 +5,7 @@ from stable_baselines3.common.monitor import Monitor
 from pathlib import Path
 from imitation.algorithms.bc import BC
 from cyclesgym.envs import PartialObsCornEnv
-from cyclesgym.dummy_policies import OpenLoopPolicy
+from cyclesgym.policies.dummy_policies import OpenLoopPolicy
 import shutil
 import torch as th
 import time
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from stable_baselines3.common.evaluation import evaluate_policy
 
 from imitation.data import types, rollout
-from cyclesgym.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH
 
 import warnings
 warnings.filterwarnings("ignore")

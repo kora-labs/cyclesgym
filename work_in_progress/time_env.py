@@ -1,4 +1,3 @@
-from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.crop_planning import CropPlanning
 import time
 import numpy as np
@@ -7,7 +6,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import PPO
 import matplotlib.pyplot as plt
 import warnings
-from cyclesgym.paths import FIGURES_PATH, DATA_PATH
+from cyclesgym.utils.paths import FIGURES_PATH, DATA_PATH
 
 warnings.filterwarnings("ignore")
 

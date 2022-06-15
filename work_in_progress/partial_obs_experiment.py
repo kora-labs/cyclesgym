@@ -5,7 +5,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from cyclesgym.paths import AGENTS_PATH
+from cyclesgym.utils.paths import AGENTS_PATH
 
 def train(mask):
     # Create environment

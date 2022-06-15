@@ -15,7 +15,7 @@ from yaml import Loader
 import multiprocessing
 
 from cyclesgym.pretrain_utils import train_bc, collect_corn_expert_trajectories
-from cyclesgym.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH
 
 
 def create_net_arch(config):

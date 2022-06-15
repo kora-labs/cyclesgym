@@ -1,7 +1,7 @@
 import pandas as pd
 import wandb
 import csv
-from cyclesgym.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH
 
 api = wandb.Api()
 

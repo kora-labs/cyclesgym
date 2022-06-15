@@ -8,7 +8,9 @@ __all__ = ['InformedPolicy']
 
 class InformedPolicy(object):
     """
-    Policy with a fertilization window where the probability of actions depends on a difference between a learned saturation level and the current levels of N.
+    Policy with a fertilization window where the probability of actions depends on a difference between a learned
+    saturation level and the current levels of N.
+
 
     The probability is given by
     pi(0|s) = pi1(0|s) + (1 - pi1(0|s)) * pi2(0|s)

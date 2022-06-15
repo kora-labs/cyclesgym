@@ -1,11 +1,10 @@
-from pathlib import Path
 import unittest
 import numpy as np
 import pandas as pd
 from cyclesgym.managers import *
 from cyclesgym.managers.utils import *
 
-from cyclesgym.paths import TEST_PATH
+from cyclesgym.utils.paths import TEST_PATH
 
 
 class TestOperationManager(unittest.TestCase):
@@ -107,8 +106,6 @@ class TestWeatherManager(unittest.TestCase):
         load_manager = WeatherManager(fname)
         assert self.manager.immutables.equals(load_manager.immutables)
         assert self.manager.mutables.equals(load_manager.mutables)
-
-
 
 
 class TestControlManager(unittest.TestCase):

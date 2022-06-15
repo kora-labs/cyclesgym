@@ -2,7 +2,7 @@ import requests
 from sys import platform
 import pathlib
 import zipfile
-from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.utils.paths import CYCLES_PATH
 import stat
 import subprocess
 

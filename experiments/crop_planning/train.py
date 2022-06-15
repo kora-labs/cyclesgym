@@ -1,23 +1,18 @@
-import os.path
 import numpy as np
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.utils import set_random_seed
 from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
 from cyclesgym.utils.wandb_utils import WANDB_ENTITY, CROP_PLANNING_EXPERIMENT
-from cyclesgym.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH
 from pathlib import Path
 import gym
-from cyclesgym.envs.corn import Corn
-from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting, CropPlanningFixedPlantingRandomWeather
-from cyclesgym.envs.crop_planning import CropPlanningFixedPlantingRandomWeatherRotationObserver, CropPlanningFixedPlantingRotationObserver
+from cyclesgym.envs.crop_planning import CropPlanningFixedPlanting
 import wandb
 from wandb.integration.sb3 import WandbCallback
-import sys
 import random
 import argparse
-from cyclesgym.paths import CYCLES_PATH
 
 
 class Train:
@@ -232,19 +227,10 @@ if __name__ == '__main__':
         entity=WANDB_ENTITY,
         monitor_gym=True,  # automatically upload gym environements' videos
         save_code=True,
-        dir=PROJECT_PATH.joinpath('wandb'),
+        dir=PROJECT_PATH,
     )
 
     config = wandb.config
 
     trainer = Train(config)
     model, eval_env = trainer.train()
-    # Load the saved statistics
-
-    eval_env = VecNormalize.load(config['stats_path'], eval_env)
-    #  do not update moving averages at test time
-    eval_env.training = False
-    # reward normalization is not needed at test time
-    eval_env.norm_reward = False
-
-

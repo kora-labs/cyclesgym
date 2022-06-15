@@ -5,7 +5,7 @@ import subprocess
 
 from cyclesgym.managers import CropManager
 from cyclesgym.utils.utils import diff_pd
-from cyclesgym.paths import CYCLES_PATH, TEST_PATH
+from cyclesgym.utils.paths import CYCLES_PATH, TEST_PATH
 import time
 
 

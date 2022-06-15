@@ -5,7 +5,7 @@ from cyclesgym.envs.implementers import Fertilizer
 from cyclesgym.managers import OperationManager
 from cyclesgym.envs.utils import ydoy2date
 
-from cyclesgym.paths import TEST_PATH
+from cyclesgym.utils.paths import TEST_PATH
 
 
 class TestFertilizer(unittest.TestCase):

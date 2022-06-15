@@ -3,7 +3,7 @@ from cyclesgym.envs.observers import SoilNObserver, CropRotationTrailingWindowOb
 from cyclesgym.envs.rewarders import CropRewarder, compound_rewarder
 from cyclesgym.envs.implementers import RotationPlanter, RotationPlanterFixedPlanting
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager, OperationManager, SoilNManager
-from cyclesgym.paths import CYCLES_PATH
+from cyclesgym.utils.paths import CYCLES_PATH
 from cyclesgym.envs.weather_generator import WeatherShuffler
 
 from gym import spaces
