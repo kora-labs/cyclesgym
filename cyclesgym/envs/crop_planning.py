@@ -25,7 +25,7 @@ class CropPlanning(CyclesEnv):
 
         super().__init__(SIMULATION_START_YEAR=start_year,
                          SIMULATION_END_YEAR=end_year,
-                         ROTATION_SIZE=end_year-start_year,
+                         ROTATION_SIZE=end_year - start_year + 1,
                          USE_REINITIALIZATION=0,
                          ADJUSTED_YIELDS=0,
                          HOURLY_INFILTRATION=1,

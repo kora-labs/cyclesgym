@@ -325,8 +325,8 @@ class CornShuffledWeather(Corn):
 if __name__ == '__main__':
     np.random.seed(0)
     env_kwargs = dict(delta=7, n_actions=11, maxN=150, start_year=1980,
-                      end_year=1980, sampling_start_year=1980,
-                      sampling_end_year=2013, n_weather_samples=100, )
+                      end_year=1984, sampling_start_year=1980,
+                      sampling_end_year=2005, n_weather_samples=100, )
     n_trials = 10
     np.random.seed(0)
     env = CornShuffledWeather(**env_kwargs)
@@ -337,7 +337,7 @@ if __name__ == '__main__':
         week = 0
         while True:
             a = 10 if week == 15 else 0
-            s, r, done, info = env_new.step(a)
+            s, r, done, info = env.step(a)
             rewards[i] += r
             week += 1
             if done:
