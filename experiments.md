@@ -25,6 +25,7 @@ $ ./experiments/crop_planning/crop_planning_experiment.sh
 The script will lunch the `experiments/crop_planning/train.py` script with fixed and random weather generation, and with 
 adaptive and non-adaptive policies, with 5 fixed seeds.
 
-### Custom experiments
-
-For a custom experiment, please refer to the jupyter notebooks available in the `notebook` folder.
+### Note
+In both cases above, the experiments are run in series. We advice to run the different experiments as parallel jobs in a 
+computation cluster. For a discussion on the computational resources needed to reproduce the experiments, see the appendix
+of the paper.

@@ -19,7 +19,7 @@ conda activate cyclesgym
 Then, clone the repo and change working directory
 
 ```bash
-git clone https://github.com/zuzuba/cyclesgym.git
+git clone https://gitlab.inf.ethz.ch/matteotu/cyclesgym.git
 cd cyclesgym
 ```
 
@@ -32,20 +32,23 @@ To install, run:
 pip install -e .
 ```
 
-If you want to use the OpenAI gym environment based on cycles, run:
+If you further want to use some basic libraries to train reinforcement learning agents of the cyclesgym environments use:
 ```bash
-pip install -e .ENV
+pip install -e .SOLVERS
 ```
 
 Or, if you are using zsh:
 ```bash
-pip install -e .\[ENV\]
+pip install -e .\[SOLVERS\]
 ```
 
-If you also want to install some basic libraries to solve the environment, substitute .ENV with .ENV_SOLVERS
-
-**Note**: The [pygmo library](https://esa.github.io/pygmo2/) installed with the ENV_SOLVERS option may give problems 
-when installed via pip on Mac or Windows, see [here](https://esa.github.io/pygmo2/install.html). 
 
 ### Pre-defined environments
-For an explanation of our pre-defined environments and how to use them, see  [here](predefined_envs.md)
+For an explanation of our pre-defined environments and how to use them, see [here](predefined_envs.md)
+
+### Reproduce the experiments  
+To reproduce the experiments described in the paper, see [here](experiments.md)
+
+### Custom experiments
+
+For a custom experiment, please refer to the jupyter notebooks available in the `notebooks` folder.
