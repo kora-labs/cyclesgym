@@ -409,7 +409,8 @@ if __name__ == '__main__':
     entity=WANDB_ENTITY,
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
-    group="group_name"
+    group="group_name",
+    dir=PROJECT_PATH.joinpath('wandb'),
     )
 
     

@@ -6,6 +6,7 @@ from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.utils import set_random_seed
 from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
 from cyclesgym.utils.wandb_utils import WANDB_ENTITY, CROP_PLANNING_EXPERIMENT
+from cyclesgym.paths import PROJECT_PATH
 from pathlib import Path
 import gym
 from cyclesgym.envs.corn import Corn
@@ -45,7 +46,7 @@ class Train:
 
         eval_env_other_loc_long = self.env_maker(start_year=self.config['train_start_year'],
                                                  end_year=self.config['eval_end_year'] - 1,
-                                                 weather_file='NewHolland.weather', \
+                                                 weather_file='NewHolland.weather',
                                                  env_class=self.config['eval_env_class'],
                                                  training=False)
 
@@ -211,7 +212,7 @@ if __name__ == '__main__':
             eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
     else:
         env_class = 'CropPlanningFixedPlantingRandomWeather'
-        n_weather_samples = 1000
+        n_weather_samples = 2
         eval_env_class = 'CropPlanningFixedPlanting'
         if args['non_adaptive'] == 'True':
             env_class = 'CropPlanningFixedPlantingRandomWeatherRotationObserver'
@@ -231,6 +232,7 @@ if __name__ == '__main__':
         entity=WANDB_ENTITY,
         monitor_gym=True,  # automatically upload gym environements' videos
         save_code=True,
+        dir=PROJECT_PATH.joinpath('wandb'),
     )
 
     config = wandb.config
