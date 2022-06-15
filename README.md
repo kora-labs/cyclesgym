@@ -44,11 +44,10 @@ pip install -e .\[SOLVERS\]
 
 
 ### Pre-defined environments
-For an explanation of our pre-defined environments and how to use them, see [here](predefined_envs.md)
+For an explanation of our pre-defined environments and how to use them, see [here](documents/predefined_envs.md).
 
 ### Reproduce the experiments  
-To reproduce the experiments described in the paper, see [here](experiments.md)
+To reproduce the experiments described in the paper, see [here](documents/experiments.md).
 
 ### Custom experiments
-
 For a custom experiment, please refer to the jupyter notebooks available in the `notebooks` folder.
