@@ -39,7 +39,8 @@ class CyclesEnv(gym.Env):
                  CROP_FILE,
                  OPERATION_FILE,
                  SOIL_FILE,
-                 WEATHER_FILE,
+                 WEATHER_GENERATOR_CLASS,
+                 WEATHER_GENERATOR_KWARGS,
                  REINIT_FILE,
                  delta,
                  *args,
@@ -68,7 +69,7 @@ class CyclesEnv(gym.Env):
             'CROP_FILE': CROP_FILE,
             'OPERATION_FILE': OPERATION_FILE,
             'SOIL_FILE': SOIL_FILE,
-            'WEATHER_FILE': WEATHER_FILE,
+            'WEATHER_FILE': 'weather.weather',
             'REINIT_FILE': REINIT_FILE,
         }
 
@@ -120,6 +121,10 @@ class CyclesEnv(gym.Env):
         # Output files managers
         self.output_managers = []
         self.output_files = []
+
+        # Weather generator
+        self.weather_generator = WEATHER_GENERATOR_CLASS(**WEATHER_GENERATOR_KWARGS)
+        self.weather_generator.generate_weather()
 
     def _post_init_setup(self):
         self.weather_manager = None
@@ -178,12 +183,9 @@ class CyclesEnv(gym.Env):
         os.symlink(src, dest)
 
     def _create_weather_input_file(self):
-        """Creat weather file by simlinking the one indicated in the base ctrl."""
-        weather_file = self.ctrl_base_manager.ctrl_dict['WEATHER_FILE']
-        src = CYCLES_PATH.joinpath('input', weather_file)
-        if not src.exists():
-            raise ValueError(f'There is no {weather_file}  in '
-                             f'{CYCLES_PATH.joinpath("input")}')
+        """Creat weather file by simlinking the one given by the generator."""
+        # Symlink to one of the sampled weather files
+        src = self.weather_generator.sample_weather_path()
         dest = self.input_dir.name.joinpath('weather.weather')
         self.weather_input_file = dest
         os.symlink(src, dest)
@@ -347,35 +349,4 @@ class PartialObsEnv(gym.ObservationWrapper):
 
     def observation(self, obs):
         return obs[self.mask]
-
-
-
-if __name__ == '__main__':
-    env = CyclesEnv(
-        SIMULATION_START_YEAR=1980,
-        SIMULATION_END_YEAR = 1980,
-        ROTATION_SIZE = 1,
-        USE_REINITIALIZATION = 0,
-        ADJUSTED_YIELDS = 0,
-        HOURLY_INFILTRATION = 1,
-        AUTOMATIC_NITROGEN = 0,
-        AUTOMATIC_PHOSPHORUS = 0,
-        AUTOMATIC_SULFUR = 0,
-        DAILY_WEATHER_OUT = 1,
-        DAILY_CROP_OUT = 1,
-        DAILY_RESIDUE_OUT = 1,
-        DAILY_WATER_OUT = 1,
-        DAILY_NITROGEN_OUT = 1,
-        DAILY_SOIL_CARBON_OUT = 1,
-        DAILY_SOIL_LYR_CN_OUT = 1,
-        ANNUAL_SOIL_OUT = 1,
-        ANNUAL_PROFILE_OUT = 1,
-        ANNUAL_NFLUX_OUT = 1,
-        CROP_FILE = 'GenericCrops.crop',
-        OPERATION_FILE = 'ContinuousCorn.operation',
-        SOIL_FILE = 'GenericHagerstown.soil',
-        WEATHER_FILE = 'RockSprings.weather',
-        REINIT_FILE='N / A',
-        delta=7)
-    env._common_reset()
 
