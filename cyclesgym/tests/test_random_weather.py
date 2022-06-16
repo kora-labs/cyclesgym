@@ -3,7 +3,8 @@ import shutil
 import subprocess
 import unittest
 import unittest.mock as mock
-from cyclesgym.envs.corn import CornShuffledWeather
+import numpy as np
+from cyclesgym.envs.corn import Corn
 from cyclesgym.envs.utils import date2ydoy
 from cyclesgym.managers import WeatherManager, CropManager, SeasonManager
 from cyclesgym.envs.weather_generator import WeatherShuffler
@@ -100,15 +101,18 @@ class TestShuffleWeather(unittest.TestCase):
         # Start gym env
         operation_file = TEST_FILENAMES[1]
         with mock.patch('numpy.random.choice', fixed_start_year), mock.patch('random.shuffle', fixed_perm):
-            env = CornShuffledWeather(delta=1, maxN=150, n_actions=16,
-                                      start_year=1980,
-                                      end_year=1982,
-                                      use_reinit=False,
-                                      n_weather_samples=1,
-                                      operation_file=operation_file,
-                                      sampling_start_year=1980,
-                                      sampling_end_year=1982
-                                      )
+            start_year = 1980
+            end_year = 1982
+            target_year_range = np.arange(start_year, end_year + 1)
+            weather_generator_kwargs = dict(n_weather_samples=1,
+                                            sampling_start_year=1980,
+                                            sampling_end_year=1982,
+                                            target_year_range=target_year_range,
+                                            base_weather_file=CYCLES_PATH.joinpath('input', 'RockSprings.weather'))
+
+
+            env = Corn(delta=1, maxN=150, n_actions=16, start_year=start_year, end_year=end_year, operation_file=operation_file,
+                       use_reinit=False, weather_generator_class=WeatherShuffler, weather_generator_kwargs=weather_generator_kwargs)
 
         # Run simulation with same management and compare
         env.reset()

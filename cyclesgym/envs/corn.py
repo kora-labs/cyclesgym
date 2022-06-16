@@ -5,8 +5,10 @@ from cyclesgym.envs.observers import compound_observer, CropObserver, \
 from cyclesgym.envs.rewarders import compound_rewarder, CropRewarder, \
     NProfitabilityRewarder
 from cyclesgym.utils.paths import CYCLES_PATH
-from cyclesgym.envs.weather_generator import WeatherShuffler
+from cyclesgym.envs.weather_generator import WeatherShuffler, FixedWeatherGenerator
 import os
+from cyclesgym.envs.constrainers import FertilizationEventConstrainer, \
+    TotalNitrogenConstrainer, LeachingConstrainer, compound_constrainer
 
 from cyclesgym.envs.implementers import *
 import pathlib
@@ -28,7 +30,9 @@ class Corn(CyclesEnv):
                  maxN,
                  operation_file='ContinuousCorn.operation',
                  soil_file='GenericHagerstown.soil',
-                 weather_file='RockSprings.weather',
+                 weather_generator_class=FixedWeatherGenerator,
+                 weather_generator_kwargs={
+                     'base_weather_file': CYCLES_PATH.joinpath('input', 'RockSprings.weather')},
                  start_year=1980,
                  end_year=1980,
                  use_reinit=True
@@ -48,7 +52,7 @@ class Corn(CyclesEnv):
                          DAILY_CROP_OUT=1,
                          DAILY_RESIDUE_OUT=0,
                          DAILY_WATER_OUT=0,
-                         DAILY_NITROGEN_OUT=0,
+                         DAILY_NITROGEN_OUT=1,
                          DAILY_SOIL_CARBON_OUT=0,
                          DAILY_SOIL_LYR_CN_OUT=0,
                          ANNUAL_SOIL_OUT=0,
@@ -57,13 +61,22 @@ class Corn(CyclesEnv):
                          CROP_FILE='GenericCrops.crop',
                          OPERATION_FILE=operation_file,
                          SOIL_FILE=soil_file,
-                         WEATHER_FILE=weather_file,
+                         WEATHER_GENERATOR_CLASS=weather_generator_class,
+                         WEATHER_GENERATOR_KWARGS=weather_generator_kwargs,
                          REINIT_FILE='N / A',
                          delta=delta)
         self._post_init_setup()
         self._init_observer()
         self._generate_observation_space()
         self._generate_action_space(n_actions, maxN)
+
+        # TODO: Move to CyclesEnv
+        self.constrainer = None
+
+    def _post_init_setup(self):
+        super()._post_init_setup()
+        self.soil_n_file = None
+        self.soil_n_manager = None
 
     def _generate_action_space(self, n_actions, maxN):
         self.action_space = spaces.Discrete(n_actions, )
@@ -83,15 +96,22 @@ class Corn(CyclesEnv):
         self.input_files = [self.weather_input_file]
 
     def _init_output_managers(self):
+        # Files
         self.crop_output_file = self._get_output_dir().joinpath('CornRM.90.dat')
         self.season_file = self._get_output_dir().joinpath('season.dat')
+        self.soil_n_file = self._get_output_dir().joinpath('N.dat')
+
+        # Managers
         self.crop_output_manager = CropManager(self.crop_output_file)
         self.season_manager = SeasonManager(self.season_file)
+        self.soil_n_manager = SoilNManager(self.soil_n_file)
 
         self.output_managers = [self.crop_output_manager,
-                                self.season_manager]
+                                self.season_manager,
+                                self.soil_n_manager]
         self.output_files = [self.crop_output_file,
-                             self.season_file]
+                             self.season_file,
+                             self.soil_n_file]
 
     def _init_observer(self, *args, **kwargs):
         end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
@@ -111,6 +131,15 @@ class Corn(CyclesEnv):
             rate=0.75,
             start_year=self.ctrl_base_manager.ctrl_dict['SIMULATION_START_YEAR']
         )
+
+    def _init_constrainer(self):
+        # Initialize constrainer
+        end_year = self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
+        self.constrainer = compound_constrainer(
+            [TotalNitrogenConstrainer(),
+             FertilizationEventConstrainer(),
+             LeachingConstrainer(soil_n_manager=self.soil_n_manager,
+                                 end_year=end_year)])
 
     def _action2mass(self, action: int) -> float:
         return self.maxN * action / (self.n_actions - 1)
@@ -140,20 +169,27 @@ class Corn(CyclesEnv):
             self._update_operation_file()
             self.implementer.start_year = self.reinit_year + 1
 
+        # TODO: output managers are updated in cycles call below. Should we remove this?
         self._update_output_managers()
-
-        # Compute reward
-        r = self.rewarder.compute_reward(date=self.date, delta=self.delta, action=action)
 
         done = self.date.year > self.ctrl_base_manager.ctrl_dict['SIMULATION_END_YEAR']
 
         if reinit and not done:
             self._call_cycles(debug=False)
 
+        # Compute reward
+        r = self.rewarder.compute_reward(date=self.date, delta=self.delta,
+                                         action=action)
+        # Compute constraints values
+        info = {}
+        constraints = self.constrainer.compute_constraint(date=self.date,
+                                                          action=action)
+        info.update(constraints)
+
         # Compute
         obs = self.observer.compute_obs(self.date, N=action)
 
-        return obs, r, done, {}
+        return obs, r, done, info
 
     def reset(self) -> np.ndarray:
         # Set up dirs and files and run first simulation
@@ -163,6 +199,7 @@ class Corn(CyclesEnv):
         self._init_observer()
         self._init_rewarder()
         self._init_implementer()
+        self._init_constrainer()
 
         # Set to zero all pre-existing fertilization for N
         rerun_cycles = self.implementer.reset()
@@ -236,99 +273,25 @@ class Corn(CyclesEnv):
         return (year_of_next_step > self.reinit_year and self.date.year == self.reinit_year)
 
 
-class CornShuffledWeather(Corn):
-    def __init__(self, delta,
-                 n_actions,
-                 maxN,
-                 sampling_start_year,
-                 sampling_end_year,
-                 operation_file='ContinuousCorn.operation',
-                 soil_file='GenericHagerstown.soil',
-                 weather_file='RockSprings.weather',
-                 start_year=1980,
-                 end_year=1980,
-                 use_reinit=True,
-                 n_weather_samples=10,
-                 ):
-        """
-        Parameters
-        ----------
-        delta: int
-            Time step in days
-        n_actions: int
-            Number of discrete actions
-        maxN: int
-            Maximum Nitrogen that can be provided in one step. We have
-            n_actions equally spaced in [0, maxN]
-        sampling_start_year: int
-            Lower end of the year range to sample the weather
-        sampling_end_year: int
-            Upper end of the year range to sample the weather (included for
-            consistency with start year)
-        operation_file: str
-            Base operation file
-        soil_file: str
-            Base soil file
-        weather_file: str
-            Base weather file
-        start_year: int
-            Year to start the simulation from
-        end_year:
-            Year to end the simulation at (included)
-        use_reinit: bool
-            If true, speeds up multi-year simulation by using the reinit option
-            of Cycles
-        n_weather_samples: int
-            Number of different weather samples
-        """
-        super().__init__(delta,
-                         n_actions,
-                         maxN,
-                         operation_file=operation_file,
-                         soil_file=soil_file,
-                         weather_file=weather_file,
-                         start_year=start_year,
-                         end_year=end_year,
-                         use_reinit=use_reinit)
-
-        # Create weather generator
-        base_weather_file = CYCLES_PATH.joinpath(
-            'input', self.ctrl_base_manager.ctrl_dict['WEATHER_FILE'])
-
-        sim_start_year = self.ctrl_base_manager.ctrl_dict[
-            'SIMULATION_START_YEAR']
-        sim_end_year = self.ctrl_base_manager.ctrl_dict[
-            'SIMULATION_END_YEAR']
-        target_year_range = np.arange(sim_start_year,
-                                      sim_end_year + 1)
-
-        self.weather_generator = WeatherShuffler(
-            n_weather_samples=n_weather_samples,
-            sampling_start_year=sampling_start_year,
-            sampling_end_year=sampling_end_year,
-            base_weather_file=base_weather_file,
-            target_year_range=target_year_range
-        )
-
-        # Generate weather files by reshuffling
-        self.weather_generator.generate_weather()
-
-    def _create_weather_input_file(self):
-        # Symlink to one of the sampled weather files
-        src = self.weather_generator.sample_weather_path()
-        dest = self.input_dir.name.joinpath('weather.weather')
-        self.weather_input_file = dest
-        os.symlink(src, dest)
-
-
 if __name__ == '__main__':
     np.random.seed(0)
-    env_kwargs = dict(delta=7, n_actions=11, maxN=150, start_year=1980,
-                      end_year=1984, sampling_start_year=1980,
-                      sampling_end_year=2005, n_weather_samples=100, )
+
+    # Base argument
+    env_kwargs = dict(delta=7, n_actions=11, maxN=150, start_year=1980, end_year=1980)
+
+    # Weather shuffling
+    target_year_range = np.arange(env_kwargs['start_year'], env_kwargs['end_year'] + 1)
+    weather_generator_kwargs = dict(n_weather_samples=100,
+                                    sampling_start_year=1980,
+                                    sampling_end_year=2013,
+                                    base_weather_file=CYCLES_PATH.joinpath('input', 'RockSprings.weather'),
+                                    target_year_range=target_year_range)
+    env_kwargs.update(dict(weather_generator_class=WeatherShuffler,
+                           weather_generator_kwargs=weather_generator_kwargs))
+
     n_trials = 10
     np.random.seed(0)
-    env = CornShuffledWeather(**env_kwargs)
+    env = Corn(**env_kwargs)
     rewards = np.zeros(n_trials)
 
     for i in range(n_trials):

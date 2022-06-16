@@ -5,7 +5,7 @@ import calendar
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
-
+import os
 from cyclesgym.managers import WeatherManager
 from cyclesgym.envs.utils import MyTemporaryDirectory, create_sim_id
 from cyclesgym.utils.paths import CYCLES_PATH
@@ -112,6 +112,25 @@ class WeatherShuffler(WeatherGenerator):
             m.save(self._get_weather_dir().joinpath(weather_fname))
 
         print('done generating weather files')
+
+
+class FixedWeatherGenerator(WeatherGenerator):
+    def __init__(self, base_weather_file: Path):
+        """
+        Dummy weather generator that uses fixed weather conditions specified in base file.
+
+        Parameters
+        ----------
+        base_manager: Path
+            Path to weather file.
+        """
+        self.base_weather_file = base_weather_file
+        super().__init__()
+
+    def generate_weather(self):
+        weather_fname = self.base_weather_file.name
+        os.symlink(self.base_weather_file, self._get_weather_dir().joinpath(weather_fname))
+        self.weather_list.append(weather_fname)
 
 
 def shuffle_weather(weather_manager: WeatherManager,
@@ -258,7 +277,6 @@ def generate_random_weather(weather_manager: WeatherManager,
 
 
 if __name__ == '__main__':
-    from cyclesgym.utils.paths import CYCLES_PATH
     import time
 
     # Load base weather data
