@@ -26,8 +26,6 @@ cd cyclesgym
 ```
 
 Subsequently, install the library according to your needs.
-If you only need the managers to manipulate cycles files, run:
-
 To install, run:
 
 ```bash
