@@ -5,10 +5,13 @@ from stable_baselines3 import PPO, A2C, DQN
 from stable_baselines3.common.utils import set_random_seed
 from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
 from cyclesgym.utils.wandb_utils import WANDB_ENTITY, CROP_PLANNING_EXPERIMENT
-from cyclesgym.utils.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH, CYCLES_PATH
 from pathlib import Path
 import gym
-from cyclesgym.envs.crop_planning import CropPlanningFixedPlanting
+from cyclesgym.envs.corn import Corn
+from cyclesgym.envs.crop_planning import CropPlanning, CropPlanningFixedPlanting
+from cyclesgym.envs.crop_planning import CropPlanningFixedPlantingRotationObserver
+from cyclesgym.envs.weather_generator import FixedWeatherGenerator, WeatherShuffler
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import random
@@ -26,45 +29,65 @@ class Train:
         eval_env_train = self.env_maker(start_year=self.config['train_start_year'],
                                         end_year=self.config['train_end_year'],
                                         training=False,
-                                        env_class=self.config['eval_env_class'])
+                                        env_class=self.config['eval_env_class'],
+                                        weather_generator_class=FixedWeatherGenerator,
+                                        weather_generator_kwargs={
+                                            'base_weather_file': CYCLES_PATH.joinpath('input',
+                                                                                      'RockSprings.weather')})
 
         eval_env_new_years = self.env_maker(start_year=self.config['eval_start_year'],
                                             end_year=self.config['eval_end_year'],
                                             training=False,
-                                            env_class=self.config['eval_env_class'])
+                                            env_class=self.config['eval_env_class'],
+                                            weather_generator_class=FixedWeatherGenerator,
+                                            weather_generator_kwargs={
+                                                'base_weather_file': CYCLES_PATH.joinpath('input',
+                                                                                          'RockSprings.weather')})
+
 
         eval_env_other_loc = self.env_maker(start_year=self.config['train_start_year'],
                                             end_year=self.config['train_end_year'],
-                                            weather_file='NewHolland.weather',
                                             training=False,
-                                            env_class=self.config['eval_env_class'])
+                                            env_class=self.config['eval_env_class'],
+                                            weather_generator_class=FixedWeatherGenerator,
+                                            weather_generator_kwargs={
+                                                'base_weather_file': CYCLES_PATH.joinpath('input',
+                                                                                          'NewHolland.weather')})
 
         eval_env_other_loc_long = self.env_maker(start_year=self.config['train_start_year'],
                                                  end_year=self.config['eval_end_year'] - 1,
-                                                 weather_file='NewHolland.weather',
                                                  env_class=self.config['eval_env_class'],
+                                                 weather_generator_class=FixedWeatherGenerator,
+                                                 weather_generator_kwargs={
+                                                     'base_weather_file': CYCLES_PATH.joinpath('input',
+                                                                                               'NewHolland.weather')},
                                                  training=False)
 
         return [eval_env_train, eval_env_new_years, eval_env_other_loc, eval_env_other_loc_long]
 
-    def env_maker(self, env_class=CropPlanningFixedPlanting,
-                  training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil',
-                  weather_file='RockSprings.weather', n_weather_samples=None):
+    def env_maker(self, env_class=CropPlanningFixedPlanting, weather_generator_class=FixedWeatherGenerator,
+                  weather_generator_kwargs={'base_weather_file': CYCLES_PATH.joinpath('input', 'RockSprings.weather')},
+                  training=True, n_procs=4, start_year=1980, end_year=2000, soil_file='GenericHagerstown.soil'):
         if not training:
             n_procs = 1
 
         if isinstance(env_class, str):
             env_class = globals()[env_class]
+        if isinstance(weather_generator_class, str):
+            weather_generator_class = globals()[weather_generator_class]
+
+        # Convert to Path since pickle converted it to string
+        # base_weather_path = weather_generator_kwargs['base_weather_file']
+        weather_generator_kwargs['base_weather_file'] = Path(weather_generator_kwargs['base_weather_file'])
 
         def make_env():
             # creates a function returning the basic env. Used by SubprocVecEnv later to create a
             # vectorized environment
             def _f():
                 env_conf = dict(start_year=start_year, end_year=end_year, soil_file=soil_file,
-                                weather_file=weather_file, rotation_crops=['CornRM.100', 'SoybeanMG.3'])
-                if n_weather_samples is not None:
-                    env_conf['n_weather_samples'] = n_weather_samples
-
+                                weather_generator_class=weather_generator_class,
+                                weather_generator_kwargs=weather_generator_kwargs,
+                                rotation_crops=['CornRM.100', 'SoybeanMG.3'])
                 env = env_class(**env_conf)
 
                 env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -108,7 +131,8 @@ class Train:
                                    end_year=self.config['train_end_year'],
                                    env_class=self.config['env_class'],
                                    training=True, n_procs=self.config['n_process'],
-                                   n_weather_samples=self.config['n_weather_samples'])
+                                   weather_generator_class=self.config['weather_generator_class'],
+                                   weather_generator_kwargs=self.config['weather_generator_kwargs'])
         dir = wandb.run.dir
         model_dir = Path(dir).joinpath('models')
 
@@ -198,25 +222,35 @@ if __name__ == '__main__':
     np.random.seed(args['seed'])
     random.seed(args['seed'])
 
-    if args['fixed_weather'] == 'True':
-        env_class = 'CropPlanningFixedPlanting'
-        n_weather_samples = None
-        eval_env_class = 'CropPlanningFixedPlanting'
-        if args['non_adaptive'] == 'True':
-            env_class = 'CropPlanningFixedPlantingRotationObserver'
-            eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
+    if args['non_adaptive'] == 'True':
+        env_class = 'CropPlanningFixedPlantingRotationObserver'
+        eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
     else:
-        env_class = 'CropPlanningFixedPlantingRandomWeather'
-        n_weather_samples = 2
+        env_class = 'CropPlanningFixedPlanting'
         eval_env_class = 'CropPlanningFixedPlanting'
-        if args['non_adaptive'] == 'True':
-            env_class = 'CropPlanningFixedPlantingRandomWeatherRotationObserver'
-            eval_env_class = 'CropPlanningFixedPlantingRotationObserver'
 
-    config = dict(train_start_year=1980, train_end_year=1998, eval_start_year=1998, eval_end_year=2016,
-                  total_timesteps=1000000, eval_freq=1000, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
-                  norm_reward=True, method="PPO", verbose=1, n_process=8, device='auto',
-                  env_class=env_class, eval_env_class=eval_env_class, n_weather_samples=n_weather_samples)
+    train_start_year = 1980
+    train_end_year = 1998
+    eval_start_year = 1998
+    eval_end_year = 2016
+
+    if args['fixed_weather'] == 'True':
+        weather_generator_class = 'FixedWeatherGenerator'
+        weather_generator_kwargs = {
+            'base_weather_file': CYCLES_PATH.joinpath('input', 'RockSprings.weather')}
+    else:
+        weather_generator_class = 'WeatherShuffler'
+        weather_generator_kwargs = dict(n_weather_samples=2,
+                                        sampling_start_year=train_start_year,
+                                        sampling_end_year=train_end_year,
+                                        base_weather_file=CYCLES_PATH.joinpath('input', 'RockSprings.weather'),
+                                        target_year_range=np.arange(train_start_year, train_end_year + 1))
+
+    config = dict(train_start_year=train_start_year, train_end_year=train_end_year, eval_start_year=eval_start_year, eval_end_year=eval_end_year,
+                  total_timesteps=500, eval_freq=100, n_steps=80, batch_size=64, n_epochs=10, run_id=0,
+                  norm_reward=True, method="PPO", verbose=1, n_process=1, device='auto',
+                  env_class=env_class, eval_env_class=eval_env_class, weather_generator_class=weather_generator_class,
+                  weather_generator_kwargs=weather_generator_kwargs)
 
     config.update(args)
 

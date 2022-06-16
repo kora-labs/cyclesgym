@@ -8,12 +8,14 @@ from cyclesgym.envs.corn import Corn
 from cyclesgym.utils.utils import EvalCallbackCustom, _evaluate_policy
 from cyclesgym.utils.wandb_utils import WANDB_ENTITY, FERTILIZATION_EXPERIMENT
 import gym
-from cyclesgym.envs.corn import CornShuffledWeather
 from corn_soil_refined import CornSoilRefined, NonAdaptiveCorn
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from pathlib import Path
-from cyclesgym.utils.paths import PROJECT_PATH
+from cyclesgym.utils.paths import PROJECT_PATH, CYCLES_PATH
+from cyclesgym.envs.weather_generator import WeatherShuffler
+import sys
+
 
 from cyclesgym.policies.dummy_policies import OpenLoopPolicy
 import expert
@@ -64,12 +66,17 @@ class Train:
                             env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
                                 start_year = start_year, end_year = end_year)
                         else:
-                            env = CornShuffledWeather(delta=7, maxN=150, n_actions=self.config['n_actions'],
-                                start_year = start_year, end_year = end_year,
+                            target_year_range = np.arange(start_year, end_year + 1)
+                            weather_generator_kwargs = dict(
+                                n_weather_samples=n_weather_samples,
                                 sampling_start_year=sampling_start_year,
                                 sampling_end_year=sampling_end_year,
-                                n_weather_samples=n_weather_samples,
-                                with_obs_year=with_obs_year)
+                                target_year_range=target_year_range,
+                                base_weather_file=CYCLES_PATH.joinpath('input', 'RockSprings.weather'))
+                            env = Corn(delta=7, maxN=150, n_actions=self.config['n_actions'],
+                                       start_year=start_year, end_year=end_year,
+                                       weather_generator_class=WeatherShuffler,
+                                       weather_generator_kwargs=weather_generator_kwargs)
 
                 #env = Monitor(env, 'runs')
                 env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -405,7 +412,7 @@ if __name__ == '__main__':
     monitor_gym=True,       # automatically upload gym environements' videos
     save_code=True,
     group="group_name",
-    dir=PROJECT_PATH.joinpath('wandb'),
+    dir=PROJECT_PATH
     )
 
     

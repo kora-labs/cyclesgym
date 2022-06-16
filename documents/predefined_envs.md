@@ -17,6 +17,13 @@ is used. It can take the values `RockSprings` or `NewHolland`.
 - `weather` indicates how the weather is generated, which can either be random (random shuffled years from historical 
 - data) or fixed. It can take the values `RW` (random) or `FW` (fixed).
 
+All of these environments come with costs that can be used to define 
+constraints on the number of fertilization events, the amount of N applied, and
+N leaching, volatilization, and emission. Following the interface from 
+[safety gym](https://github.com/openai/safety-gym), these costs are given in 
+the info dictionary that is returned by the `step` function of each environment, 
+which does not break the standard OpenAI gym interface.
+
 ### Crop planning environments
 
 The crop planning environments differ along the following dimensions: weather generation, location. The duration is 
