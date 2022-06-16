@@ -83,7 +83,6 @@ def register_crop_planning_envs():
             kwargs.update(dict(end_year=end_year,
                                weather_generator_class=weather_generator_class,
                                weather_generator_kwargs=weather_generator_kwargs))
-            print(kwargs)
             register(
                 id=name,
                 entry_point='cyclesgym.envs:CropPlanningFixedPlanting',
