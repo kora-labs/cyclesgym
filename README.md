@@ -1,5 +1,5 @@
 # CyclesGym
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENCE.txt)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE.txt)
 
 
 ## Overview
