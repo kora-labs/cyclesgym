@@ -1,6 +1,6 @@
 Here, we give an overview of how to reproduce the experiments given in the paper. All experiments are tracked using
 the wandb library for experiment tracking and reproducibility (http://wandb.ai) that is installed together with the 
-cyclesgym package. Before running the experiments, please create a profile in http://wandb.ai, then logging into wandb 
+cyclesgym package. Before running the expetiments, please create a profile in http://wandb.ai, then logging into wandb 
 from the terminal as 
 
 `$ wandb login`
@@ -14,7 +14,7 @@ It is sufficient to run the script available in the `experiments/fertilization` 
 $ ./experiments/fertilization/fertilization_experiment.sh
 ```
 The script will lunch the `experiments/fertilization/train.py` script with fixed and random weather generation, and with 
-adaptive and non-adaptive policies and in short, medium and long time horizons, with 5 fixed seeds.
+adaptive and non-adaptive policies .... (TODO: and something else?), with 5 fixed seeds.
 
 ### Crop planning environments
 

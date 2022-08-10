@@ -1,10 +1,3 @@
-# Cyclesgym
-
-This repository contains an [OpenAI gym](https://gym.openai.com/) interface to the [Cycles 
-crop growth simulator](https://plantscience.psu.edu/research/labs/kemanian/models-and-tools/cycles).
-
-For more information about cyclesgym, see our [user manual](documents/manual.md).
-
 ## Installation
 
 We recommend Python 3.8+ installation using [Anaconda](https://www.anaconda.com/products/individual#downloads).
@@ -19,11 +12,13 @@ conda activate cyclesgym
 Then, clone the repo and change working directory
 
 ```bash
-git clone https://github.com/kora-labs/cyclesgym.git
+git clone https://gitlab.inf.ethz.ch/matteotu/cyclesgym.git
 cd cyclesgym
 ```
 
 Subsequently, install the library according to your needs.
+If you only need the managers to manipulate cycles files, run:
+
 To install, run:
 
 ```bash
@@ -39,4 +34,3 @@ Or, if you are using zsh:
 ```bash
 pip install -e .\[SOLVERS\]
 ```
-
